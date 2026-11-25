@@ -376,7 +376,7 @@ function decodeBuild(code){const m=/^#?fc1-([0-9a-z]{1,7})-((?:[0-9a-z]{4})+)$/.
 /* ---------- public leaderboard (Supabase REST) ----------
    Fill in the project URL and the anon (publishable) key. That key is meant to be public:
    the database only lets anonymous visitors read and insert scores. Empty = leaderboard hidden. */
-const LB={url:'',key:''};
+const LB={url:'https://wfzywfykvxyhjcigeimr.supabase.co',key:'sb_publishable_Ovq49AEtZj7qNi4pFuvkEg_w4IPlukM'};
 const lbOn=()=>!!(LB.url&&LB.key);
 async function lbFetch(path,opts={}){
   const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),10000);

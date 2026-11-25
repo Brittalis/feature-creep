@@ -15,3 +15,7 @@ create index scores_score_idx on public.scores (score desc);
 alter table public.scores enable row level security;
 create policy "public read"   on public.scores for select to anon using (true);
 create policy "public insert" on public.scores for insert to anon with check (true);
+
+-- Newer Supabase projects don't give the public role access to new tables automatically.
+grant select, insert on public.scores to anon;
+grant usage on sequence public.scores_id_seq to anon;
