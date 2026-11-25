@@ -1,3 +1,10 @@
+<!doctype html>
+<html lang="en">
+<head>
+<meta charset="utf-8">
+<meta name="viewport" content="width=device-width,initial-scale=1,viewport-fit=cover">
+</head>
+<body>
 <title>Feature Creep</title>
 <meta name="claude:viewport-fit-sides" content="cover">
 <link rel="stylesheet" href="https://fonts.googleapis.com/css2?family=Bungee&family=Chakra+Petch:wght@400;600;700&display=swap">
@@ -10,7 +17,9 @@
   --body:'Chakra Petch','Trebuchet MS',system-ui,sans-serif;
   color-scheme:dark;
 }
+[hidden]{display:none!important}
 html,body{height:100%}
+body{margin:0}
 body{background:var(--sky-deep);color:var(--paper);font-family:var(--body);font-size:16px;overflow:hidden;
   -webkit-user-select:none;user-select:none;touch-action:none}
 #stage{position:relative;height:100%;overflow:hidden;background:var(--sky)}
@@ -1198,3 +1207,6 @@ window.__fc={S,L,LB,refreshBoard,save,encodeBuild,decodeBuild,unlocked,choose,pl
   arms(){const a=laserPivot.children.filter(m=>m.userData.i!==undefined);return a.map(m=>laserA+m.userData.i*6.283/a.length)}};
 })();
 </script>
+
+</body>
+</html>
