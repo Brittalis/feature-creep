@@ -480,8 +480,8 @@ function decodeBuild(code){const m=/^#?fc1-([0-9a-z]{1,7})-((?:[0-9a-z]{4})+)$/.
    Fill in the project URL and the anon (publishable) key. That key is meant to be public:
    the database only lets anonymous visitors read and insert scores. Empty = leaderboard hidden. */
 const LB={url:'https://wfzywfykvxyhjcigeimr.supabase.co',key:'sb_publishable_Ovq49AEtZj7qNi4pFuvkEg_w4IPlukM'};
-/* Bump GAME_VERSION when a release changes scoring or balance. Scores are stamped with it. */
-const GAME_VERSION='1.0';
+/* Bump GAME_VERSION on every merge: 1.1, then 1.1.1, 1.1.2, ... Scores are stamped with it. */
+const GAME_VERSION='1.1';
 let lbTab='all';
 const lbOn=()=>!!(LB.url&&LB.key);
 async function lbFetch(path,opts={}){
