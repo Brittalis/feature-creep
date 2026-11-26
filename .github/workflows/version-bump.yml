@@ -1,0 +1,22 @@
+name: Version bump
+on:
+  pull_request:
+    branches: [main]
+jobs:
+  check:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Require a new top RELEASES entry
+        run: |
+          top() { grep -m1 -oP "^\s*\{v:'\K[^']+" "$1"; }
+          new=$(top index.html)
+          old=$(git show "origin/${{ github.base_ref }}:index.html" | grep -m1 -oP "^\s*\{v:'\K[^']+")
+          echo "base=$old pr=$new"
+          if [ -z "$new" ]; then echo "::error::Could not find the top RELEASES entry in index.html"; exit 1; fi
+          if [ "$new" = "$old" ]; then
+            echo "::error::Add a new top entry to RELEASES in index.html with a bumped version and What's new notes (currently $old)."
+            exit 1
+          fi
