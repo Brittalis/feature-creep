@@ -204,13 +204,7 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
     <div id="career" class="eyebrow"></div>
     <details id="news">
       <summary><span id="ver">v1.1</span> · What's new</summary>
-      <ul>
-        <li>Leaderboard tabs: All time and Current Version.</li>
-        <li>24 synergies, plus a Recipe line on the pause screen.</li>
-        <li>Floor, tilt, edge and sky cards, with environment prompts.</li>
-        <li>Structural cards: draft rules, draft styles, economies, meta prompts.</li>
-        <li>Arena shapes and card slots.</li>
-      </ul>
+      <ul id="newslist"></ul>
     </details>
     <aside id="lb" hidden aria-label="Leaderboard">
       <h3>Leaderboard</h3>
@@ -494,10 +488,20 @@ function decodeBuild(code){const m=/^#?fc1-([0-9a-z]{1,7})-((?:[0-9a-z]{4})+)$/.
    Fill in the project URL and the anon (publishable) key. That key is meant to be public:
    the database only lets anonymous visitors read and insert scores. Empty = leaderboard hidden. */
 const LB={url:'https://wfzywfykvxyhjcigeimr.supabase.co',key:'sb_publishable_Ovq49AEtZj7qNi4pFuvkEg_w4IPlukM'};
-/* Bump GAME_VERSION when a release changes scoring or balance. Scores are stamped with it. */
-const GAME_VERSION='1.1';
+/* RELEASES: newest first. EVERY merge adds a new entry on top: a bumped version plus its "What's new" notes.
+   The top entry is the current version. Scores are stamped with it and the title screen shows its notes. */
+const RELEASES=[
+  {v:'1.1',notes:[
+    'Leaderboard tabs: All time and Current Version.',
+    '24 synergies, plus a Recipe line on the pause screen.',
+    'Floor, tilt, edge and sky cards, with environment prompts.',
+    'Structural cards: draft rules, draft styles, economies, meta prompts.',
+    'Arena shapes and card slots.']},
+  {v:'1.0',notes:['First release.']}];
+const GAME_VERSION=RELEASES[0].v;
 let lbTab='all';
 $('ver').textContent='v'+GAME_VERSION;
+RELEASES[0].notes.forEach(n=>{const li=document.createElement('li');li.textContent=n;$('newslist').appendChild(li)});
 const lbOn=()=>!!(LB.url&&LB.key);
 async function lbFetch(path,opts={}){
   const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),10000);
