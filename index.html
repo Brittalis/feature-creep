@@ -121,6 +121,10 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
 #lblist .rk{color:var(--lilac);font-weight:700}
 #lblist .sc{font-weight:700;color:var(--sun)}
 #lblist .tg{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--mint);margin-left:4px}
+#news{max-width:70ch;text-align:center;font-size:13px;color:var(--lilac)}
+#news summary{cursor:pointer;font-weight:700;letter-spacing:.08em;text-transform:uppercase;color:var(--sun)}
+#news summary:focus-visible{outline:2px solid var(--mint);outline-offset:2px}
+#news ul{list-style:none;margin:8px 0 0;padding:0;line-height:1.6}
 #lbtabs{display:flex;gap:4px}
 #lbtabs button{all:unset;box-sizing:border-box;flex:1;text-align:center;padding:4px 6px;font-size:12px;font-weight:700;letter-spacing:.04em;cursor:pointer;border:2px solid var(--paper);color:var(--paper)}
 #lbtabs button[aria-selected=true]{background:var(--sun);border-color:var(--sun);color:var(--ink)}
@@ -198,6 +202,10 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
     </form>
     <div id="codeerr" class="eyebrow" hidden></div>
     <div id="career" class="eyebrow"></div>
+    <details id="news">
+      <summary><span id="ver">v1.1</span> · What's new</summary>
+      <ul id="newslist"></ul>
+    </details>
     <aside id="lb" hidden aria-label="Leaderboard">
       <h3>Leaderboard</h3>
       <div id="lbtabs" role="tablist">
@@ -480,11 +488,30 @@ function decodeBuild(code){const m=/^#?fc1-([0-9a-z]{1,7})-((?:[0-9a-z]{4})+)$/.
    Fill in the project URL and the anon (publishable) key. That key is meant to be public:
    the database only lets anonymous visitors read and insert scores. Empty = leaderboard hidden. */
 const LB={url:'https://wfzywfykvxyhjcigeimr.supabase.co',key:'sb_publishable_Ovq49AEtZj7qNi4pFuvkEg_w4IPlukM'};
-/* Bump GAME_VERSION on every merge (1.1.1, 1.1.2, ...). The Current Version board covers the whole major.minor line; bump the minor (1.2) to start a fresh board. */
-const GAME_VERSION='1.1.2';
-const VERLINE=GAME_VERSION.split('.').slice(0,2).join('.'); // 1.1.x all count as 1.1; 1.2 starts a new board
+/* RELEASES: newest first. EVERY merge adds a new entry on top: a bumped version (1.1.1, 1.1.2, ...) plus its "What's new" notes.
+   The top entry is the current version. Scores are stamped with it and the title screen shows its notes. */
+const RELEASES=[
+  {v:'1.1.3',notes:[
+    'The Current Version leaderboard now covers the whole 1.1.x line.']},
+  {v:'1.1.2',notes:[
+    'New "What\'s new" section on the title screen, next to the version number.']},
+  {v:'1.1.1',notes:[
+    'Every score on the All time tab shows its version.',
+    'Bounty Hunter heals every 12th bounty, with an 8 second cooldown.',
+    'Score cap removed; off-map and audio fixes.']},
+  {v:'1.1',notes:[
+    'Leaderboard tabs: All time and Current Version.',
+    '24 synergies, plus a Recipe line on the pause screen.',
+    'Floor, tilt, edge and sky cards, with environment prompts.',
+    'Structural cards: draft rules, draft styles, economies, meta prompts.',
+    'Arena shapes and card slots.']},
+  {v:'1.0',notes:['First release.']}];
+const GAME_VERSION=RELEASES[0].v;
+const VERLINE=GAME_VERSION.split('.').slice(0,2).join('.'); // 1.1.x all count together; 1.2 starts a new board
 const verFilter='&or=('+encodeURIComponent('version.eq.'+VERLINE+',version.like.'+VERLINE+'.*')+')';
 let lbTab='all';
+$('ver').textContent='v'+GAME_VERSION;
+RELEASES[0].notes.forEach(n=>{const li=document.createElement('li');li.textContent=n;$('newslist').appendChild(li)});
 const lbOn=()=>!!(LB.url&&LB.key);
 async function lbFetch(path,opts={}){
   const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),10000);
