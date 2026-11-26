@@ -481,7 +481,7 @@ function decodeBuild(code){const m=/^#?fc1-([0-9a-z]{1,7})-((?:[0-9a-z]{4})+)$/.
    the database only lets anonymous visitors read and insert scores. Empty = leaderboard hidden. */
 const LB={url:'https://wfzywfykvxyhjcigeimr.supabase.co',key:'sb_publishable_Ovq49AEtZj7qNi4pFuvkEg_w4IPlukM'};
 /* Bump GAME_VERSION on every merge: 1.1, then 1.1.1, 1.1.2, ... Scores are stamped with it. */
-const GAME_VERSION='1.1';
+const GAME_VERSION='1.1.1';
 let lbTab='all';
 const lbOn=()=>!!(LB.url&&LB.key);
 async function lbFetch(path,opts={}){
@@ -502,7 +502,7 @@ async function refreshBoard(){
     rows.forEach((r,i)=>{const li=document.createElement('li'),b=document.createElement('button');b.type='button';
       const rk=document.createElement('span');rk.className='rk';rk.textContent=i+1;
       const nm=document.createElement('span');nm.className='nm';nm.textContent=String(r.name||'?');
-      if(lbTab==='all'&&r.version&&r.version!==GAME_VERSION){const t=document.createElement('span');t.className='tg';t.textContent='v'+r.version;nm.appendChild(t)}
+      if(lbTab==='all'&&r.version){const t=document.createElement('span');t.className='tg';t.textContent='v'+r.version;nm.appendChild(t)}
       if(r.mode==='daily'){const t=document.createElement('span');t.className='tg';t.textContent='DAILY';nm.appendChild(t)}
       const sc=document.createElement('span');sc.className='sc';sc.textContent=fmt(+r.score||0);
       b.append(rk,nm,sc);b.title=(r.sprints?r.sprints+' min · ':'')+(r.version?'v'+r.version+' · ':'')+'click to load this build';
