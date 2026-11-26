@@ -319,7 +319,7 @@ const CARDS=[
  {id:'juggle',type:'rule',goal:1,name:'Keepy-Uppy',desc:'A beach ball drops in. Hit it while it is in the air.',earn:1,word:'Juggle',pitch:'juggle a beach ball',mods:{count:'Two beach balls.'}},
  {id:'crates',type:'rule',goal:1,name:'Demolition',desc:'Crates pile up. Smash them by ramming at full speed, or with anything that hits hard.',earn:1,word:'Demolition',pitch:'smash crates',mods:{count:'Twice as many crates.'}},
  {id:'glass',type:'rule',name:'Glass Cannon',desc:'You can only hold 3 hearts. Everything pays ×1.5.',word:'Glass'},
- {id:'hunter',type:'rule',name:'Bounty Hunter',desc:'Every 6th bounty you collect heals a heart.',word:'Bounty'},
+ {id:'hunter',type:'rule',name:'Bounty Hunter',desc:'Every 12th bounty you collect heals a heart (8s cooldown).',word:'Bounty'},
  {id:'momentum',type:'rule',name:'Momentum',desc:'Rule income grows with your speed, up to double at full tilt.',word:'Breakneck'},
 ];
 const byId=Object.fromEntries(CARDS.map(c=>[c.id,c]));
@@ -350,7 +350,7 @@ const maxH=()=>L('glass')?3:MAXH;
 const VERBS=[{id:'dash',key:'Shift',label:'Dash'},{id:'grapple',key:'E',label:'Hook'},{id:'bomb',key:'F',label:'Bomb'},{id:'blink',key:'Q',label:'Blink'}];
 
 /* ---------- state ---------- */
-const S={phase:'title',run:'normal',seed:1,day:0,code:'',picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,offers:[],pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:200,bossEnd:0,bossPts:0,bossKills:0,hunt:0};
+const S={phase:'title',run:'normal',seed:1,day:0,code:'',picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,offers:[],pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:200,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99};
 const L=id=>S.lv[id]?1:0;
 const stacks=(id,stat)=>(S.mods[id]||{})[stat]||0;
 const MF=Object.fromEntries(MODS.map(m=>[m.id,m.f]));
@@ -651,11 +651,12 @@ let AC=null,muted=false,sfxG=null,musG=null,noiseBuf=null;
 function audioInit(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)();sfxG=AC.createGain();sfxG.connect(AC.destination);
   musG=AC.createGain();musG.gain.value=.4;musG.connect(AC.destination);
   noiseBuf=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}catch(e){AC=null}}
-function tone(dest,t,f,d,type,vol,slide,attack){try{const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);
+let voices=0;const VMAX=24;
+function tone(dest,t,f,d,type,vol,slide,attack){if(voices>=VMAX)return;voices++;setTimeout(()=>voices--,(d+.05+Math.max(0,t-(AC?AC.currentTime:0)))*1000);try{const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);
   if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t+d);
   if(attack){g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+attack)}else g.gain.setValueAtTime(vol,t);
   g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(dest);o.start(t);o.stop(t+d+.02)}catch(e){}}
-function hiss(dest,t,d,vol,ftype,freq,to){try{const s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();s.buffer=noiseBuf;s.loop=true;
+function hiss(dest,t,d,vol,ftype,freq,to){if(voices>=VMAX)return;voices++;setTimeout(()=>voices--,(d+.05+Math.max(0,t-(AC?AC.currentTime:0)))*1000);try{const s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();s.buffer=noiseBuf;s.loop=true;
   fl.type=ftype;fl.frequency.setValueAtTime(freq,t);if(to)fl.frequency.exponentialRampToValueAtTime(to,t+d);
   g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(fl);fl.connect(g);g.connect(dest);s.start(t,Math.random()*.5);s.stop(t+d+.02)}catch(e){}}
 function snd(f,d=.08,type='square',vol=.05,slide=0,delay=0){if(!AC||muted)return;tone(sfxG,AC.currentTime+delay,f,d,type,vol,slide)}
@@ -693,7 +694,7 @@ function music(){
 function add(n,id,p,k=1){let v=n*payMul(id)*k;const bounty=byId[id].type==='prompt';
   if(!bounty&&L('greed')&&Math.hypot(player.p.x,player.p.z)>R*.8)v*=2;
   if(!bounty&&L('momentum'))v*=1+Math.min(1,Math.hypot(player.v.x,player.v.z)/12);
-  if(bounty&&L('hunter')&&++S.hunt>=6){S.hunt=0;if(S.hearts<maxH()){S.hearts++;snd(520,.25,'triangle',.07,520);burst(player.p,0xff3d77,8)}}
+  if(bounty&&L('hunter')&&++S.hunt>=12&&S.t-(S.healT||-99)>=8){S.hunt=0;S.healT=S.t;if(S.hearts<maxH()){S.hearts++;snd(520,.25,'triangle',.07,520);burst(player.p,0xff3d77,8)}}
   if(L('combo')){S.streak=S.t-S.lastScore<2?Math.min(10,S.streak+1):0;S.lastScore=S.t;v*=1+.1*S.streak}
   S.score+=v;S.by[id]=(S.by[id]||0)+v;S[bounty?'bounty':'income']+=v;
   if(p)floater((bounty?'Bounty +':'+')+Math.round(v),p,bounty,stacks(id,'score')>0);if(!bounty)emit('score');if(bounty)snd(990,.09,'triangle',.05,500)}
@@ -896,6 +897,7 @@ function update(dt){
         if(L('pogo')&&b.v.y<7)b.v.y=8.5*mv('pogo','force')}
     }else b.g=false;
     if(b.g&&b.kind!=='boulder'){const k=Math.exp(-fr*dt);b.v.x*=k;b.v.z*=k}
+    if(b===player){const off=Math.hypot(b.p.x,b.p.z)>R+1||b.p.y<-1;b.offT=off?(b.offT||0)+dt:0;if(b.offT>3.5){b.offT=0;fell(b);continue}}
     if(b.p.y<-16)fell(b);
   }
   if(S.phase!=='play')return;
@@ -1223,7 +1225,7 @@ function gameOver(){
 function startRun(mode,data){
   if(typeof mode!=='string')mode='normal';audioInit();
   Object.assign(S,{run:mode,day:today(),seed:mode==='daily'?today():mode==='code'?data.seed:(Math.random()*2147483647)|0,code:'',
-    picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:BOSS_EVERY,bossEnd:0,bossPts:0,bossKills:0,hunt:0});
+    picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:BOSS_EVERY,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99});
   lastShown=[];passed={};lbPosted=false;seedRng(S.seed);musicSetup();
   resetRunState();player.p.set(0,player.r,0);player.v.set(0,0,0);
   $('title').hidden=true;$('over').hidden=true;$('pick').hidden=true;$('hud').hidden=false;hudCache='';
