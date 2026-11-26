@@ -34,6 +34,7 @@ body{background:var(--sky-deep);color:var(--paper);font-family:var(--body);font-
 #mult{font-family:var(--body);font-weight:700;font-size:14px;color:var(--sun);letter-spacing:.06em;margin-top:6px;text-shadow:2px 2px 0 var(--ink)}
 #mid{flex:1;max-width:340px;min-width:0;text-align:center}
 #phase{font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;text-shadow:2px 2px 0 var(--ink)}
+#foresee{font-size:11px;font-weight:700;letter-spacing:.04em;margin-top:4px;color:var(--lilac);text-shadow:1px 1px 0 var(--ink)}
 #bar{height:12px;border:3px solid var(--ink);background:var(--sky-deep);margin-top:6px}
 #bar.ready #barfill{background:var(--mint);animation:ready .6s ease-in-out infinite alternate}
 @keyframes ready{to{opacity:.45}}
@@ -159,7 +160,7 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
   <div id="hud" class="gutter" hidden>
     <div class="hudrow">
       <div><div id="score" class="stat">0</div><div id="mult">Income 0 · Bounties 0</div></div>
-      <div id="mid"><div id="phase">Sprint 1 of 8</div><div id="bar"><div id="barfill"></div></div></div>
+      <div id="mid"><div id="phase">0:00</div><div id="bar"><div id="barfill"></div></div><div id="foresee"></div></div>
       <div id="hearts"></div>
     </div>
     <div class="hudrow" style="align-items:flex-end">
@@ -330,6 +331,28 @@ const CARDS=[
  {id:'bowl',type:'rule',slot:'shape',shape:'bowl',excludes:['paint'],name:'Bowl',desc:'The plate dips in the middle. Everything slides to the bottom.',word:'Bowl'},
  {id:'dome',type:'rule',slot:'shape',shape:'dome',excludes:['paint'],name:'Dome',desc:'The plate bulges up. Everything slides toward the edge.',word:'Dome'},
  {id:'mega',type:'rule',slot:'scale',name:'Mega Stage',desc:'The plate grows 45% bigger. Prompts fire 30% more often.',word:'Mega'},
+ // Structural cards: they change how you get cards, how you choose and how you score.
+ {id:'quota',type:'rule',slot:'draft',name:'Quota',desc:'Cards stop arriving on a timer. The next one appears once you earn enough points.',word:'Quota'},
+ {id:'headhunt',type:'rule',slot:'draft',name:'Headhunter',desc:'The next card appears after 4 things go off the edge.',word:'Headhunter'},
+ {id:'lap',type:'rule',slot:'draft',name:'Lap',desc:'Touch 4 beacons in order to bring out the next card.',word:'Lap'},
+ {id:'clean',type:'rule',slot:'draft',name:'Clean Hands',desc:'The next card appears after 15 s without losing a heart.',word:'Spotless'},
+ {id:'runaway',type:'rule',slot:'draft',name:'Runaway',desc:'Cards flee from you. Catch them.',word:'Runaway'},
+ {id:'skyfall',type:'rule',slot:'draft',name:'Skyfall',desc:'Cards fall from the sky like meteors. Don\'t be under one.',word:'Skyfall'},
+ {id:'quick',type:'rule',slot:'style',name:'Quick Draft',desc:'No pause. All three options land on the plate as cards. Roll into the one you want.',word:'Quickdraw'},
+ {id:'blind',type:'rule',slot:'style',name:'Blind Draft',desc:'You only see what type each card is. Everything pays ×1.25.',word:'Blind'},
+ {id:'double',type:'rule',slot:'style',name:'Double Draft',desc:'Pick 2 of 5 each time, but cards come half as often.',word:'Double-Dip'},
+ {id:'wild',type:'rule',slot:'style',name:'Wild Deck',desc:'Hands mix rules, prompts and modifiers freely.',word:'Wild'},
+ {id:'pact',type:'rule',slot:'style',name:'Pact',desc:'Every pick also adds a random prompt. Rule income ×1.5.',word:'Pact'},
+ {id:'foresight',type:'rule',slot:'style',name:'Foresight',desc:'See your next hand while you play.',word:'Oracle'},
+ {id:'bank',type:'rule',slot:'economy',name:'Bank Run',desc:'Points stay unbanked until you stand in the bank. Lose a heart and you drop them. Everything pays ×1.5.',word:'Bank Job'},
+ {id:'rent',type:'rule',slot:'economy',name:'Rent Due',desc:'Every 60 s, earn the rent or lose a heart. Everything pays ×2.',word:'Landlord'},
+ {id:'countdown',type:'rule',slot:'economy',excludes:['glass','medkit','hunter'],name:'Countdown',desc:'No hearts. Time is your life: points and new cards add seconds, hits take 8 s away.',word:'Countdown'},
+ {id:'decay',type:'rule',slot:'economy',name:'Decay',desc:'Your score slowly drains. Your peak counts. Everything pays ×1.6.',word:'Rot'},
+ {id:'sudden',type:'rule',slot:'economy',excludes:['glass'],name:'Sudden Death',desc:'One heart. Everything pays ×3.',word:'Sudden'},
+ {id:'rewire',type:'prompt',name:'Rewire Storm',desc:'Every 60 s, one of your prompts gets a random new trigger.',word:'Rewired'},
+ {id:'echo',type:'prompt',name:'Echo',desc:'Every 3rd pick, your newest modifier copies onto another card.',word:'Echo'},
+ {id:'inflation',type:'prompt',name:'Inflation',desc:'Every 60 s, everything pays 10% more and prompts fire 5% faster.',word:'Inflated'},
+ {id:'garage',type:'prompt',name:'Garage Sale',desc:'Your next card is a cut you must make. Then this card is gone.',word:'Clearance'},
 ];
 const byId=Object.fromEntries(CARDS.map(c=>[c.id,c]));
 // Base payouts, tuned from bot-played sprints so one sprint of any scoring card is worth roughly the same.
@@ -348,19 +371,20 @@ const TRIGS=[
 const trigById=Object.fromEntries(TRIGS.map(t=>[t.id,t]));
 // Hard requirements keep a card out of the draft until it can do something; likes make it more likely once it fits.
 const TARGETS=['chasers','sumo','stampede'], AIRY=['air','laser','lava','flip'];
-const REQ={hunter:'prompt',momentum:'goal',blaster:TARGETS.concat('crates'),magnet:['orbs','gold','medkit'],boom:['orbs','gold','sumo','chasers','tag'],tiny:'prompt',night:'prompt',greed:'goal'};
+const REQ={headhunt:TARGETS,echo:'mods',garage:'five',hunter:'prompt',momentum:'goal',blaster:TARGETS.concat('crates'),magnet:['orbs','gold','medkit'],boom:['orbs','gold','sumo','chasers','tag'],tiny:'prompt',night:'prompt',greed:'goal'};
 const LIKES={grapple:TARGETS,bomb:TARGETS.concat('crates'),crates:['dash','slam','bomb','big','orbit'],juggle:['moon','djump'],paint:['dash','ice','momentum'],djump:AIRY,momentum:['dash','ice','paint'],blink:['tag','courier'],dash:TARGETS,slam:TARGETS,orbit:TARGETS,big:TARGETS,bumpers:TARGETS,blaster:TARGETS,moon:AIRY,pogo:AIRY,bouncy:['air'],magnet:['orbs','gold'],combo:['orbs','gold','hill','air'],
   air:['moon','pogo','bouncy'],chasers:['dash','slam','orbit','big'],stampede:['dash','slam','big'],gold:['magnet','boom','combo'],lava:['pogo','moon','slam'],laser:['pogo','moon','air'],flip:['air','slam'],mines:['chasers','sumo']};
 for(const c of CARDS){const r=REQ[c.id];c.likes=LIKES[c.id];
-  if(r)c.req=()=>r==='prompt'?CARDS.some(x=>x.type==='prompt'&&L(x.id)):r==='goal'?CARDS.some(x=>x.goal&&L(x.id)):r.some(L)}
+  if(r)c.req=()=>r==='mods'?Object.keys(S.mods).length>0:r==='five'?S.picks.length>=5:r==='prompt'?CARDS.some(x=>x.type==='prompt'&&L(x.id)):r==='goal'?CARDS.some(x=>x.goal&&L(x.id)):r.some(L)}
 const ORDER=['rule','prompt','mod'];
-const ENV_SLOTS=['shape','floor','tilt','edge','scale','sky'];
+const ENV_SLOTS=['shape','floor','tilt','edge','scale','sky'],META_SLOTS=['draft','style','economy'];
+const isMeta=c=>META_SLOTS.includes(c.slot);
 const isEnv=c=>ENV_SLOTS.includes(c.slot);
 const slotHolder=c=>c.slot&&S.picks.map(id=>byId[id]).find(x=>x.slot===c.slot&&x.id!==c.id);
 // A card is excluded when it, or anything you own, lists the other in `excludes`.
 const excluded=c=>(c.excludes||[]).some(L)||S.picks.some(id=>(byId[id].excludes||[]).includes(c.id));
 const PICK_EVERY=20, BOSS_EVERY=200, BOSS_LEN=30, PICK_DRIFT=15, R0=11, G0=28, MAXH=5;
-const maxH=()=>L('glass')?3:MAXH;
+const maxH=()=>L('sudden')?1:L('glass')?3:MAXH;
 const VERBS=[{id:'dash',key:'Shift',label:'Dash'},{id:'grapple',key:'E',label:'Hook'},{id:'bomb',key:'F',label:'Bomb'},{id:'blink',key:'Q',label:'Blink'}];
 
 /* ---------- state ---------- */
@@ -374,7 +398,8 @@ function payMul(id){
   if(byId[id].type==='prompt'){const risk=stacks(id,'count')+stacks(id,'size')+stacks(id,'speed')+stacks(id,'force');
     k*=Math.pow(1.5,risk)*(L('tiny')?1.5:1)*(L('night')?1.5:1)}
   else k*=L('ice')?1.5:1;
-  return k*(L('glass')?1.5:1);
+  if(byId[id].type==='rule'&&L('pact'))k*=1.5;
+  return k*(L('glass')?1.5:1)*(L('blind')?1.25:1)*(L('bank')?1.5:1)*(L('rent')?2:1)*(L('decay')?1.6:1)*(L('sudden')?3:1)*S.infl;
 }
 let R=R0;
 // Career progress lives in this browser only. If storage is unavailable, every card is simply unlocked.
@@ -680,38 +705,85 @@ function resetRunState(){
   pcell.fill(0);pdirty=true;paintMesh.visible=false;hill.mesh.visible=false;flag.mesh.visible=false;flag.on=false;
   for(const k in cds)cds[k]=0;hookT=0;hookLine.visible=false;player.airJ=0;canvas.style.filter='';plateGlow(0);
   Object.assign(ev,{flipPending:false,flipT:0,stampT:-1,shrinkCycle:0,shrinkStart:0,gustT:0,mirrorT:0,lavaT:0,pinT:-9,pinStreak:0,bossT:3,bossI:0});
-  S.lastFall=-1;S.lastScore=-9;S.streak=0;
-  removePickup();applyStatics();
+  S.lastFall=-1;S.lastScore=-9;S.streak=0;lapMk.visible=false;bankMk.visible=false;
+  removePickups();applyStatics();
 }
 
-/* ---------- card pickups ---------- */
-// A floating card on the plate. Touching it pauses the game and opens the 1-of-3 choice.
+/* ---------- card pickups ----------
+   Cards float on the plate. Touching one pauses play and opens the 1-of-3 choice,
+   except under Quick Draft, where each option is its own card and touching it takes it. */
 const PK_COL={rule:0x3df0c2,prompt:0xff3d77,mod:0xffd23f,cut:0xff9140};
-const pk={mesh:new T.Group(),p:new V3(),on:false,t:0,kind:'rule'};
-{const card=new T.Mesh(new T.BoxGeometry(1.7,2.3,.1),new T.MeshLambertMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.35}));card.position.y=1.6;pk.card=card;pk.mesh.add(card);
- const face=new T.Mesh(new T.BoxGeometry(1.3,1.8,.12),new T.MeshBasicMaterial({color:0xfff8e8}));face.position.y=1.6;pk.face=face;pk.mesh.add(face);
- const ring=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.7}));ring.scale.setScalar(1.6);ring.position.y=.04;pk.ring=ring;pk.mesh.add(ring);
- const beam=new T.Mesh(GEO.cyl,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.35}));beam.scale.set(.08,9,.08);beam.position.y=4.5;pk.beam=beam;pk.mesh.add(beam);
- pk.mesh.visible=false;world.add(pk.mesh)}
-const nextIsCut=()=>S.pickCount>0&&S.pickCount%10===0&&S.cutAt!==S.pickCount;
+const PK_CSS={rule:'#3df0c2',prompt:'#ff3d77',mod:'#ffd23f',cut:'#ff9140'};
+let pks=[];
+function cardFace(kind,title){const c=document.createElement('canvas');c.width=256;c.height=352;const x=c.getContext('2d');
+  x.fillStyle='#fff8e8';x.fillRect(0,0,256,352);x.fillStyle=PK_CSS[kind];x.fillRect(0,0,256,70);
+  x.fillStyle='#17123a';x.font='700 34px Bungee, Impact, sans-serif';x.textAlign='center';x.fillText(kind==='cut'?'CUT':TYPE[kind][0].toUpperCase(),128,48);
+  if(title){x.font='700 30px "Chakra Petch", sans-serif';const words=String(title).split(' ');let line='',y=150;
+    for(const w of words){if(x.measureText(line+w).width>220&&line){x.fillText(line.trim(),128,y);y+=38;line=''}line+=w+' '}x.fillText(line.trim(),128,y)}
+  else{x.font='700 120px Bungee, Impact, sans-serif';x.fillText('?',128,230)}
+  return new T.CanvasTexture(c)}
+function makePk(kind,x,z,idx,title){
+  const g=new T.Group(),col=PK_COL[kind];
+  const frame=new T.Mesh(new T.BoxGeometry(1.8,2.4,.1),new T.MeshLambertMaterial({color:col,emissive:col,emissiveIntensity:.4}));frame.position.y=1.6;g.add(frame);
+  const face=new T.Mesh(new T.PlaneGeometry(1.6,2.2),new T.MeshBasicMaterial({map:cardFace(kind,title),side:T.DoubleSide}));face.position.set(0,0,.06);frame.add(face);
+  const ring=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:col,transparent:true,opacity:.7}));ring.scale.setScalar(1.6);ring.position.y=.04;g.add(ring);
+  const beam=new T.Mesh(GEO.cyl,new T.MeshBasicMaterial({color:col,transparent:true,opacity:.35}));beam.scale.set(.08,9,.08);beam.position.y=4.5;g.add(beam);
+  world.add(g);const o={mesh:g,frame,ring,beam,p:new V3(x,0,z),t:0,kind,idx,fall:0};pks.push(o);return o}
+function removePickups(){for(const o of pks)world.remove(o.mesh);pks=[]}
+const removePickup=removePickups;
+const nextIsCut=()=>S.forceCut||S.pickCount>0&&S.pickCount%10===0&&S.cutAt!==S.pickCount;
 const nextKind=()=>nextIsCut()?'cut':ORDER[S.pickCount%3];
+// How close the next card is, from 0 to 1, under the current Draft Rule.
+function draftNeed(){return(L('double')?2:1)}
+function draftProgress(){
+  if(L('quota'))return(S.earned-S.pickBase)/(250*(S.picks.length/5+1)*draftNeed());
+  if(L('headhunt'))return S.koSince/(4*draftNeed());
+  if(L('lap'))return S.lapN/(4*draftNeed());
+  if(L('clean'))return S.cleanT/(15*draftNeed());
+  return 1-timers.pick/(PICK_EVERY*draftNeed());
+}
 function spawnPickup(){
-  const[x,z]=spot(.7,4);pk.p.set(x,0,z);pk.on=true;pk.t=0;pk.kind=nextKind();
-  const c=PK_COL[pk.kind];pk.card.material.color.set(c);pk.card.material.emissive.set(c);pk.ring.material.color.set(c);pk.beam.material.color.set(c);
-  pk.mesh.visible=true;ringFx(x,z,2,c);snd(880,.12,'triangle',.06,440);snd(1320,.12,'triangle',.05,0,.1);
-  banner(pk.kind==='cut'?'Cut card':'New '+TYPE[pk.kind][0].toLowerCase()+' card');
+  const kind=nextKind();
+  if(L('quick')&&kind!=='cut'){S.mode='draft';S.pickLeft=1;S.offers=pickOffers().slice(0,3);if(!S.offers.length)return;
+    S.offers.forEach((o,i)=>{const[x,z]=spot(.7,4+i);makePk(o.type,x,z,i,L('blind')?null:offerName(o))});}
+  else{const[x,z]=L('skyfall')?(()=>{let px=player.p.x+rand(-3,3),pz=player.p.z+rand(-3,3);if(!ARENA.on(px,pz,1))[px,pz]=ARENA.nearest(px,pz,1);return[px,pz]})():spot(.7,4);
+    const o=makePk(kind,x,z,-1,null);if(L('skyfall')){o.fall=1.6;o.ring.scale.setScalar(2.4)}}
+  const c=PK_COL[kind];ringFx(pks[0].p.x,pks[0].p.z,2,c);snd(880,.12,'triangle',.06,440);snd(1320,.12,'triangle',.05,0,.1);
+  banner(L('skyfall')?'Incoming card!':kind==='cut'?'Cut card':L('quick')?'Pick a card':'New '+TYPE[kind][0].toLowerCase()+' card');
 }
-function removePickup(){pk.on=false;pk.mesh.visible=false}
 function updatePickup(dt){
-  if(!pk.on){if(!S.boss){timers.pick-=dt;if(timers.pick<=0)spawnPickup()}return}
-  pk.t+=dt;
-  // an ignored card comes looking for you
-  if(pk.t>PICK_DRIFT){const dx=player.p.x-pk.p.x,dz=player.p.z-pk.p.z,d=Math.hypot(dx,dz)||1,sp=Math.min(6,1.5+(pk.t-PICK_DRIFT)*.3);pk.p.x+=dx/d*sp*dt;pk.p.z+=dz/d*sp*dt}
-  if(!ARENA.on(pk.p.x,pk.p.z,1)){const[nx2,nz2]=ARENA.nearest(pk.p.x,pk.p.z,1);pk.p.x=nx2;pk.p.z=nz2}
-  if(Math.hypot(player.p.x-pk.p.x,player.p.z-pk.p.z)<player.r+.8&&player.p.y-ARENA.fy(pk.p.x,pk.p.z)<3.5&&player.p.y>-4){removePickup();burst(player.p,PK_COL[pk.kind],12);hitStop(.06);showPick()}
+  if(!pks.length){if(S.boss)return;timers.pick-=dt;
+    if(L('lap'))lapUpdate();
+    // safety net: a card always arrives within 60 s, whatever the Draft Rule asks
+    if(draftProgress()>=1||PICK_EVERY*draftNeed()-timers.pick>=60*draftNeed())spawnPickup();return}
+  for(const o of pks){o.t+=dt;
+    if(o.fall>0){o.fall-=dt;if(o.fall<=0){shake=.5;burst(o.p,PK_COL[o.kind],14);nz(.3,.25,'lowpass',900,120);
+      if(Math.hypot(player.p.x-o.p.x,player.p.z-o.p.z)<2.4&&player.p.y<3)hurt(player.p.x-o.p.x,player.p.z-o.p.z);shockwave(o.p.x,o.p.z,2.6,9,true)}continue}
+    if(L('runaway')){const dx=o.p.x-player.p.x,dz=o.p.z-player.p.z,d=Math.hypot(dx,dz)||1;if(d<9){const[ix,iz]=ARENA.inward(o.p.x,o.p.z),e=ARENA.sd(o.p.x,o.p.z)<3?1.4:0;
+        o.p.x+=(dx/d+ix*e)*3.4*dt;o.p.z+=(dz/d+iz*e)*3.4*dt}}
+    else if(o.t>PICK_DRIFT){const dx=player.p.x-o.p.x,dz=player.p.z-o.p.z,d=Math.hypot(dx,dz)||1,sp=Math.min(6,1.5+(o.t-PICK_DRIFT)*.3);o.p.x+=dx/d*sp*dt;o.p.z+=dz/d*sp*dt}
+    if(!ARENA.on(o.p.x,o.p.z,1)){const[nx2,nz2]=ARENA.nearest(o.p.x,o.p.z,1);o.p.x=nx2;o.p.z=nz2}
+    if(Math.hypot(player.p.x-o.p.x,player.p.z-o.p.z)<player.r+.8&&player.p.y-ARENA.fy(o.p.x,o.p.z)<3.5&&player.p.y>-4){
+      const idx=o.idx,col=PK_COL[o.kind];removePickups();burst(player.p,col,12);hitStop(.06);
+      if(idx>=0){S.phase='pick';choose(idx)}else showPick();
+      return}}
 }
-function pickupVisuals(rdt){if(!pk.mesh.visible)return;pk.mesh.position.set(pk.p.x,ARENA.fy(pk.p.x,pk.p.z)+.15*Math.sin(performance.now()/300),pk.p.z);pk.card.rotation.y+=rdt*2;pk.face.rotation.y=pk.card.rotation.y;
-  pk.ring.scale.setScalar(1.6+.2*Math.sin(performance.now()/200));pk.beam.material.opacity=pk.t>PICK_DRIFT?.6:.35}
+function pickupVisuals(rdt){const now=performance.now();
+  for(const o of pks){const fl=ARENA.fy(o.p.x,o.p.z);o.mesh.position.set(o.p.x,fl+(o.fall>0?o.fall*14:0)+.15*Math.sin(now/300+o.idx),o.p.z);
+    // cards turn to face the camera so their labels stay readable
+    o.frame.rotation.y=Math.atan2(camera.position.x-o.p.x,camera.position.z-o.p.z);
+    o.ring.scale.setScalar((o.fall>0?2.4:1.6)+.2*Math.sin(now/200));o.beam.material.opacity=o.t>PICK_DRIFT?.6:.35}}
+// Bank Run: a circle that moves every 25 s; standing in it banks everything.
+const bankMk=new T.Mesh(GEO.disc,new T.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.45}));bankMk.scale.setScalar(2);bankMk.visible=false;world.add(bankMk);
+function bankUpdate(dt){timers.bank=(timers.bank??0)-dt;if(!bankMk.visible||timers.bank<=0){const[x,z]=spot(.75,4);bankMk.position.set(x,.05+ARENA.fy(x,z),z);bankMk.visible=true;timers.bank=25}
+  if(S.unbanked>0&&Math.hypot(player.p.x-bankMk.position.x,player.p.z-bankMk.position.z)<2&&player.p.y<3){S.score+=S.unbanked;floater('Banked '+fmt(S.unbanked),player.p.clone(),false,true);S.unbanked=0;snd(1047,.2,'triangle',.07)}}
+const rentDue=()=>Math.round(300*(1+S.t/120));
+function rewireOne(){const ids=S.picks.filter(id=>FIRE[id]);if(!ids.length)return;const id=ids[Math.floor(rng()*ids.length)],ts=TRIGS.filter(t=>!t.req||t.req());
+  const t=ts[Math.floor(rng()*ts.length)];S.trig[id]=t.id;trigCount[id]=0;banner(byId[id].name+' → '+t.name);buildTracker();chips()}
+// Lap: four beacons in order bring out the next card.
+const lapMk=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0xfff8e8}));lapMk.scale.setScalar(1.4);lapMk.visible=false;world.add(lapMk);
+function lapUpdate(){if(!lapMk.visible){const[x,z]=spot(.8,6);lapMk.position.set(x,.06+ARENA.fy(x,z),z);lapMk.visible=true}
+  lapMk.rotation.y+=.05;if(Math.hypot(player.p.x-lapMk.position.x,player.p.z-lapMk.position.z)<1.6&&player.p.y<3){S.lapN++;lapMk.visible=false;snd(660+S.lapN*110,.1,'triangle',.06);ringFx(lapMk.position.x,lapMk.position.z,1.6,0xfff8e8)}}
 
 /* ---------- fx ---------- */
 let shake=0;
@@ -786,7 +858,9 @@ function add(n,id,p,k=1){let v=n*payMul(id)*k;const bounty=byId[id].type==='prom
   if(!bounty&&L('momentum'))v*=1+Math.min(1,Math.hypot(player.v.x,player.v.z)/12);
   if(bounty&&L('hunter')&&++S.hunt>=6){S.hunt=0;if(S.hearts<maxH()){S.hearts++;snd(520,.25,'triangle',.07,520);burst(player.p,0xff3d77,8)}}
   if(L('combo')){S.streak=S.t-S.lastScore<2?Math.min(10,S.streak+1):0;S.lastScore=S.t;v*=1+.1*S.streak}
-  S.score+=v;S.by[id]=(S.by[id]||0)+v;S[bounty?'bounty':'income']+=v;
+  S.earned+=v;S.by[id]=(S.by[id]||0)+v;S[bounty?'bounty':'income']+=v;
+  if(L('bank'))S.unbanked+=v;else S.score+=v;
+  if(L('countdown'))S.clock=Math.min(180,S.clock+v/10);
   if(p)floater((bounty?'Bounty +':'+')+Math.round(v),p,bounty,stacks(id,'score')>0);if(!bounty)emit('score');if(bounty)snd(990,.09,'triangle',.05,500)}
 
 function bossPay(n,p){const v=n*S.bossN*(L('glass')?1.5:1);S.score+=v;S.bounty+=v;S.bossPts+=v;if(n>=300)S.bossKills++;
@@ -794,13 +868,19 @@ function bossPay(n,p){const v=n*S.bossN*(L('glass')?1.5:1);S.score+=v;S.bounty+=
 function smash(b){if(b.dead)return;b.dead=true;world.remove(b.mesh);burst(b.p,0xc98b4a,8);add(PAY.crates,'crates',b.p.clone());snd(180,.1,'square',.06,-80);nz(.12,.12,'bandpass',1200)}
 
 /* ---------- damage ---------- */
-function hurt(dx,dz){if(player.inv>0||S.phase!=='play')return;S.hearts--;player.inv=1.3;shake=.6;hitStop(.09,.4);flash();emit('hit');snd(140,.25,'sawtooth',.08,-90);
+// One place for everything that happens when you lose a heart.
+function loseHeart(){
+  S.cleanT=0;
+  if(L('countdown')){S.clock-=8;floater('-8 s',player.p.clone(),true)}else S.hearts--;
+  if(L('bank')&&S.unbanked>0){floater('Dropped '+fmt(S.unbanked),player.p.clone(),true);S.unbanked=0}
+}
+function hurt(dx,dz){if(player.inv>0||S.phase!=='play')return;loseHeart();player.inv=1.3;shake=.6;hitStop(.09,.4);flash();emit('hit');snd(140,.25,'sawtooth',.08,-90);
   const d=Math.hypot(dx,dz)||1;player.v.x+=dx/d*7;player.v.z+=dz/d*7;player.v.y+=4;burst(player.p,0xff3d77,10);
-  if(S.hearts<=0)gameOver()}
+  if(S.hearts<=0||S.clock<=0&&L('countdown'))gameOver()}
 function fell(b){
   const[rx,rz]=ARENA.nearest(b.p.x,b.p.z,0);tmp.set(rx,.6,rz);
-  if(b===player){S.hearts--;shake=.7;hitStop(.06,.3);flash();emit('hit');snd(220,.4,'sawtooth',.08,-180);S.lastFall=S.t;ev.flipPending=false;
-    if(S.hearts<=0){gameOver();return}
+  if(b===player){loseHeart();shake=.7;hitStop(.06,.3);flash();emit('hit');snd(220,.4,'sawtooth',.08,-180);S.lastFall=S.t;ev.flipPending=false;
+    if(S.hearts<=0||L('countdown')&&S.clock<=0){gameOver();return}
     {const[sx,sz]=ARENA.nearest(0,0,2);player.p.set(sx,8+ARENA.fy(sx,sz),sz)}player.v.set(0,0,0);player.inv=2.2;player.slam=false;banner('Fell off');return}
   b.dead=true;world.remove(b.mesh);
   if(b.kind==='boss'){S.bossDown=true;bossPay(300,tmp.clone());banner('Boss down!');hitStop(.15,.7);return}
@@ -817,7 +897,7 @@ function fell(b){
 const keys={};let jumpQ=false;const actQ={};const stick={x:0,y:0,id:null,ox:0,oy:0};
 addEventListener('keydown',e=>{
   if(['Space','ArrowUp','ArrowDown','ArrowLeft','ArrowRight'].includes(e.code)&&S.phase==='play')e.preventDefault();
-  if(S.phase==='pick'&&['Digit1','Digit2','Digit3'].includes(e.code)){choose(+e.code.slice(5)-1);return}
+  if(S.phase==='pick'&&['Digit1','Digit2','Digit3','Digit4','Digit5'].includes(e.code)){choose(+e.code.slice(5)-1);return}
   if(e.repeat)return;keys[e.code]=true;
   if(e.code==='Space')jumpQ=true;else if(e.code==='ShiftLeft'||e.code==='ShiftRight')actQ.dash=true;else if(e.code==='KeyE')actQ.grapple=true;
   else if(e.code==='KeyF')actQ.bomb=true;else if(e.code==='KeyQ')actQ.blink=true;
@@ -840,7 +920,7 @@ const fireQ=[],trigCount={},trigLast={};
 const FREQ={meteors:'count',flip:'speed',gold:'speed',gust:'speed',mirror:'speed',lava:'speed',mines:'speed',turrets:'speed',stampede:'speed'};
 const trigN=id=>Math.max(1,Math.round(trigById[S.trig[id]].n/(FREQ[id]?mv(id,FREQ[id]):1)));
 function fireP(id){FIRE[id]();const el=trk[id];if(el){el.classList.remove('fire');void el.offsetWidth;el.classList.add('fire')}}
-function emit(evt){for(const id in S.trig){if(S.trig[id]!==evt||!L(id))continue;trigCount[id]=(trigCount[id]||0)+1;
+function emit(evt){if(evt==='ko')S.koSince++;for(const id in S.trig){if(S.trig[id]!==evt||!L(id))continue;trigCount[id]=(trigCount[id]||0)+1;
   if(trigCount[id]>=trigN(id)&&S.t-(trigLast[id]===undefined?-9:trigLast[id])>1.2){trigCount[id]=0;trigLast[id]=S.t;fireQ.push(id)}}}
 const PERIOD={chasers:()=>6.5,meteors:()=>2.4/mv('meteors','count'),flip:()=>7/mv('flip','speed'),gold:()=>8/mv('gold','speed'),stampede:()=>8/mv('stampede','speed'),
   gust:()=>8/mv('gust','speed'),mirror:()=>10/mv('mirror','speed'),lava:()=>8/mv('lava','speed'),mines:()=>7/mv('mines','speed'),turrets:()=>3.2/mv('turrets','speed')};
@@ -935,7 +1015,7 @@ function update(dt){
   if(L('juggle')){timers.ball-=dt;if(timers.ball<=0&&bodies.filter(b=>b.kind==='ball').length<Math.round(mv('juggle','count'))){spawnBall();timers.ball=1.5}}
   if(L('crates')){timers.crate-=dt;if(timers.crate<=0&&bodies.filter(b=>b.kind==='crate').length<Math.round(7*mv('crates','count'))){spawnCrate();timers.crate=.9/mv('crates','count')}}
   while(fireQ.length){const id=fireQ.shift();if(L(id))fireP(id)}
-  for(const id in FIRE){if(!L(id)||S.trig[id])continue;timers[id]-=dt;if(timers[id]<=0){tper[id]=timers[id]=PERIOD[id]()/Math.sqrt(ramp)/(L('mega')?1.3:1);fireP(id)}}
+  for(const id in FIRE){if(!L(id)||S.trig[id])continue;timers[id]-=dt;if(timers[id]<=0){tper[id]=timers[id]=PERIOD[id]()/Math.sqrt(ramp)/(L('mega')?1.3:1)/S.inflF;fireP(id)}}
   // the boss casts your own prompts at you, one after another
   if(S.boss&&!S.bossDown){ev.bossT-=dt;if(ev.bossT<=0){ev.bossT=2.6;const ids=Object.keys(FIRE).filter(L);if(ids.length)fireP(ids[ev.bossI++%ids.length]);
     const bs=bodies.find(b=>b.kind==='boss');if(bs&&bs.g)bs.v.y=6}}
@@ -1107,6 +1187,13 @@ function update(dt){
   bodies=bodies.filter(b=>!b.dead);
 
   updatePickup(dt);
+  S.cleanT+=dt;
+  if(L('countdown')){S.clock-=dt;if(S.clock<=0){gameOver();return}}
+  if(L('decay')){S.score=Math.max(0,S.score-S.score*.012*dt);S.peak=Math.max(S.peak,S.score)}
+  if(L('bank')){bankUpdate(dt)}else bankMk.visible=false;
+  if(L('rent')){S.rentT-=dt;if(S.rentT<=0){const due=rentDue();if(S.earned-S.rentBase<due){banner('Rent missed');loseHeart();flash();if(S.hearts<=0){gameOver();return}}else banner('Rent paid');S.rentT=60;S.rentBase=S.earned}}
+  if(L('rewire')){timers.rewire=(timers.rewire??60)-dt;if(timers.rewire<=0){timers.rewire=60;rewireOne()}}
+  if(L('inflation')){timers.infl=(timers.infl??60)-dt;if(timers.infl<=0){timers.infl=60;S.infl*=1.1;S.inflF*=1.05;banner('Inflation +10%')}}
   // the boss keeps its old rhythm: every 200 s of play, for 30 s
   if(!S.boss&&S.t>=S.nextBoss&&S.phase==='play')startBoss();
   if(S.boss&&S.t>=S.bossEnd)endBoss();
@@ -1150,17 +1237,18 @@ let camSpin=0;const camPos=new V3(0,16,17),camGoal=new V3(),camLook=new V3(),cam
 /* ---------- HUD ---------- */
 let hudCache='';
 function hud(){
-  const sc=Math.round(S.score),clock=Math.floor(S.t),key=sc+'|'+S.hearts+'|'+clock+'|'+S.picks.length+'|'+maxH()+'|'+S.boss+'|'+pk.on;
-  $('barfill').style.transform=`scaleX(${S.boss?clamp((S.bossEnd-S.t)/BOSS_LEN,0,1):pk.on?1:clamp(1-timers.pick/PICK_EVERY,0,1)})`;
-  $('bar').classList.toggle('ready',pk.on&&!S.boss);
+  const sc=Math.round(S.score),clock=Math.floor(S.t),key=sc+'|'+S.hearts+'|'+clock+'|'+S.picks.length+'|'+maxH()+'|'+S.boss+'|'+pks.length+'|'+Math.round(S.unbanked)+'|'+Math.ceil(S.clock);
+  $('barfill').style.transform=`scaleX(${S.boss?clamp((S.bossEnd-S.t)/BOSS_LEN,0,1):pks.length?1:clamp(draftProgress(),0,1)})`;
+  $('bar').classList.toggle('ready',pks.length>0&&!S.boss);
   if($('tracker').hidden!==(S.phase!=='play'))$('tracker').hidden=$('abil').hidden=S.phase!=='play';
   for(const id in trk){let f=1;if(FIRE[id])f=S.trig[id]?(trigCount[id]||0)/trigN(id):1-timers[id]/(tper[id]||1);trk[id].firstChild.style.transform=`scaleX(${clamp(f,0,1)})`}
   for(const id in abl)abl[id].firstChild.style.transform=`scaleX(${clamp(1-cds[id]/(cdmax[id]||1),0,1)})`;
   if(key===hudCache)return;hudCache=key;
   if($('score').textContent!==fmt(sc)){const s=$('score');s.textContent=fmt(sc);s.classList.remove('bump');void s.offsetWidth;s.classList.add('bump')}
-  $('mult').textContent='Income '+fmt(S.income)+' · Bounties '+fmt(S.bounty);
-  $('hearts').innerHTML='♥'.repeat(Math.max(0,S.hearts))+'<i>'+'♥'.repeat(Math.max(0,maxH()-S.hearts))+'</i>';
-  $('phase').innerHTML=(S.run==='daily'?'Daily · ':S.run==='code'?'Shared · ':'')+(S.boss?'Boss · ':'')+mmss(S.t)+'<span class="cnt"> · '+S.picks.length+' cards'+(pk.on&&!S.boss?' · grab the card':'')+'</span>';
+  $('mult').textContent=L('bank')?'Unbanked '+fmt(S.unbanked):L('rent')?'Rent '+fmt(Math.max(0,S.earned-S.rentBase))+' / '+fmt(rentDue())+' in '+Math.ceil(S.rentT)+' s':L('decay')?'Peak '+fmt(S.peak):'Income '+fmt(S.income)+' · Bounties '+fmt(S.bounty);
+  $('hearts').innerHTML=L('countdown')?'⏱ '+Math.max(0,Math.ceil(S.clock))+' s':'♥'.repeat(Math.max(0,S.hearts))+'<i>'+'♥'.repeat(Math.max(0,maxH()-S.hearts))+'</i>';
+  $('foresee').textContent=L('foresight')&&S.nextOffers?'Next: '+S.nextOffers.map(offerName).join(' · '):'';
+  $('phase').innerHTML=(S.run==='daily'?'Daily · ':S.run==='code'?'Shared · ':'')+(S.boss?'Boss · ':'')+mmss(S.t)+'<span class="cnt"> · '+S.picks.length+' cards'+(pks.length&&!S.boss?(L('runaway')?' · catch the card':' · grab the card'):L('headhunt')?' · '+S.koSince+'/4 knockouts':L('lap')?' · beacon '+(S.lapN+1)+'/4':'')+'</span>';
 }
 const mmss=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
 const modNames=id=>MODS.flatMap(m=>Array(stacks(id,m.id)).fill(m.name)).concat(S.trig[id]?[trigById[S.trig[id]].name]:[]);
@@ -1185,15 +1273,15 @@ function chips(){$('chips').innerHTML=S.picks.map(id=>{const c=byId[id],m=modNam
 
 /* ---------- drafting ---------- */
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
-function modOffers(){
+function modOffers(n=3){
   const pairs=[];
   for(const id of S.picks){const c=byId[id];
     for(const m of MODS){const ok=m.id==='score'?!!c.earn:!!(c.mods&&c.mods[m.id]);if(ok&&stacks(id,m.id)<2&&!(S.trig[id]==='hit'&&FREQ[id]===m.id))pairs.push({type:'mod',mod:m,host:c,k:m.id})}
     if(FIRE[id]&&!S.trig[id])for(const t of TRIGS)if((!t.req||t.req())&&!(t.id==='hit'&&FREQ[id]&&stacks(id,FREQ[id])))pairs.push({type:'mod',trig:t,host:c,k:'trig'})}
   shuffle(pairs);const out=[];
-  for(const p of pairs)if(out.length<3&&!out.some(o=>o.k===p.k||o.host===p.host))out.push(p);
-  for(const p of pairs)if(out.length<3&&!out.includes(p)&&!out.some(o=>o.k===p.k))out.push(p);
-  for(const p of pairs)if(out.length<3&&!out.includes(p)&&!(p.trig&&out.some(o=>o.trig)))out.push(p);
+  for(const p of pairs)if(out.length<n&&!out.some(o=>o.k===p.k||o.host===p.host))out.push(p);
+  for(const p of pairs)if(out.length<n&&!out.includes(p)&&!out.some(o=>o.k===p.k))out.push(p);
+  for(const p of pairs)if(out.length<n&&!out.includes(p)&&!(p.trig&&out.some(o=>o.trig)))out.push(p);
   return out;
 }
 let lastShown=[],passed={};
@@ -1202,18 +1290,25 @@ function wpick(pool,n,ok){const out=[],p=pool.slice();
   while(out.length<n&&p.length){let tot=0;const w=p.map(c=>{const x=(c.likes&&c.likes.some(L)?3:1)*(lastShown.includes(c.id)?.25:1)*Math.pow(.5,passed[c.id]||0);tot+=x;return x});
     let r=rng()*tot,i=0;while(i<p.length-1&&(r-=w[i])>0)i++;const c=p.splice(i,1)[0];if(!ok||ok(c,out))out.push(c)}
   return out}
-function typeOffers(type){
-  if(type==='mod')return modOffers();
+function typeOffers(type,n=3){
+  if(type==='mod')return modOffers(n);
   let pool=CARDS.filter(c=>c.type===type&&!c.syn&&!L(c.id)&&unlocked(c.id)&&!excluded(c)&&(!c.req||c.req()));
   if(S.pickCount===0)pool=pool.filter(c=>c.goal);
-  const out=wpick(pool,3,(c,out)=>!(c.cam&&out.some(o=>o.cam))&&!(isEnv(c)&&out.some(isEnv))&&!(c.goal&&S.pickCount&&out.some(o=>o.goal))).map(card=>({type,card}));
+  const out=wpick(pool,n,(c,out)=>!(c.cam&&out.some(o=>o.cam))&&!(isEnv(c)&&out.some(isEnv))&&!(isMeta(c)&&out.some(isMeta))&&!(c.goal&&S.pickCount&&out.some(o=>o.goal))).map(card=>({type,card}));
   if(type==='rule'&&S.pickCount){const syn=CARDS.filter(c=>c.syn&&!L(c.id)&&c.syn.every(L)&&!excluded(c));
-    if(syn.length&&rng()<.75){const o={type,card:syn[Math.floor(rng()*syn.length)]};if(out.length<3)out.unshift(o);else out[0]=o}}
+    if(syn.length&&rng()<.75){const o={type,card:syn[Math.floor(rng()*syn.length)]};if(out.length<n)out.unshift(o);else out[0]=o}}
   return out;
 }
-function makeOffers(){const i=S.pickCount%3;let out=[];
+// Offers under the current Draft Style: Wild mixes types, Double shows five.
+function pickOffers(){
+  const n=L('double')?5:3;
+  if(L('wild')){let all=[];for(const t of ORDER)all=all.concat(typeOffers(t));shuffle(all);const out=[];
+    for(const o of all)if(out.length<n&&!out.some(x=>(x.card&&o.card&&x.card.id===o.card.id)||(x.host&&o.host&&x.host===o.host&&x.k===o.k)))out.push(o);return out}
+  return makeOffers(n)}
+const offerName=o=>o.trig?o.trig.name+' '+o.host.name:o.mod?o.mod.name+' '+o.host.name:o.card.name;
+function makeOffers(n=3){const i=S.pickCount%3;let out=[];
   // When a deck runs low, top the hand up from the other decks so there are always three options.
-  for(const t of [ORDER[i],ORDER[(i+2)%3],ORDER[(i+1)%3]]){if(out.length>=3)break;out=out.concat(typeOffers(t).slice(0,3-out.length))}
+  for(const t of [ORDER[i],ORDER[(i+2)%3],ORDER[(i+1)%3]]){if(out.length>=n)break;out=out.concat(typeOffers(t,n).slice(0,n-out.length))}
   return out}
 function cutOffers(){
   const own=S.picks.map(id=>byId[id]),goals=own.filter(c=>c.goal),ok=own.filter(c=>!(c.goal&&goals.length===1));
@@ -1224,6 +1319,7 @@ function cutOffers(){
 const HEADS={rule:'Change the rules.',prompt:'What happens while you play?',mod:'Multiply something you already picked.'};
 function cardHTML(o,i){
   let name,desc,pay,tag;
+  if(L('blind')&&o.type!=='cut')return `<button class="card" type="button" data-i="${i}" style="--c:var(${TYPE[o.type][1]})"><span class="top"><span class="cat">${TYPE[o.type][0]}</span><span class="tag">BLIND</span></span><span class="name">???</span><span class="desc">Blind Draft hides this card until you take it.</span><span class="pay">Everything pays ×1.25</span><span class="num">${coarse?'TAP TO ADD':'PRESS '+(i+1)}</span></button>`;
   if(o.type==='cut'){const c=o.card,m=modNames(c.id);name='Cut '+c.name;desc=c.desc;tag=TYPE[c.type][0].toUpperCase();
     const dep=CARDS.filter(x=>x.syn&&L(x.id)&&x.syn.includes(c.id)).map(x=>x.name);
     pay=(dep.length?'Also removes '+dep.join(', ')+'. ':'')+(m.length?'Loses '+m.join(', ')+'. ':'')+(c.earn?'Earned '+fmt(S.by[c.id]||0)+' so far':'Does not score')}
@@ -1239,14 +1335,15 @@ function cardHTML(o,i){
 }
 function showPick(reroll){
   S.phase='pick';
-  S.mode=S.pickCount>0&&S.pickCount%10===0&&S.cutAt!==S.pickCount?'cut':'draft';
-  S.offers=S.mode==='cut'?cutOffers():makeOffers();
+  S.mode=nextIsCut()?'cut':'draft';
+  const fs=S.nextOffers&&S.nextOffers.every(o=>o.card?!L(o.card.id)&&!excluded(o.card):L(o.host.id));
+  S.offers=S.mode==='cut'?cutOffers():fs?S.nextOffers:pickOffers();S.nextOffers=null;S.pickLeft=S.mode==='cut'?1:L('double')?2:1;
   if(!S.offers.length){if(S.mode==='cut'){S.cutAt=S.pickCount;return showPick(reroll)}S.pickCount++;$('pick').hidden=true;return resumePlay()}
   const type=S.offers[0].type;
   $('pickeyebrow').textContent=(S.mode==='cut'?S.pickCount+' picks in · Cut':'Pick '+(S.pickCount+1)+' · '+TYPE[type][0])+(S.t>0?' · '+mmss(S.t):'');
-  $('pickhead').textContent=S.mode==='cut'?'Cut one card, or keep everything.':S.pickCount?HEADS[type]:'What is this game about?';
+  $('pickhead').textContent=S.mode==='cut'?(S.forceCut?'Garage sale: cut one card.':'Cut one card, or keep everything.'):S.pickLeft>1?'Pick two.':S.pickCount?HEADS[type]:'What is this game about?';
   $('cards').innerHTML=S.offers.map(cardHTML).join('');
-  $('skip').hidden=S.mode!=='cut';
+  $('skip').hidden=S.mode!=='cut'||!!S.forceCut;
   $('reroll').hidden=S.pickCount<1;$('reroll').disabled=S.reroll<1;$('reroll').textContent='REROLL ('+S.reroll+' LEFT)';
   $('pick').hidden=false;if(!reroll)snd(440,.1,'triangle',.05,220);
 }
@@ -1254,22 +1351,29 @@ function removeCard(id){
   for(const x of [id].concat(CARDS.filter(c=>c.syn&&L(c.id)&&c.syn.includes(id)).map(c=>c.id))){S.lv[x]=0;delete S.mods[x];delete S.trig[x];S.picks=S.picks.filter(y=>y!==x);delete timers[x]}}
 function choose(i){
   const o=S.offers[i];if(!o||S.phase!=='pick')return;
-  if(o.type==='cut'){removeCard(o.card.id);S.cutAt=S.pickCount;snd(260,.2,'sawtooth',.06,-120);chips();return showPick(true)}
+  if(o.type==='cut'){removeCard(o.card.id);if(S.forceCut){S.forceCut=false;removeCard('garage');chips();S.pickCount++;$('pick').hidden=true;return resumePlay()}S.cutAt=S.pickCount;snd(260,.2,'sawtooth',.06,-120);chips();return showPick(true)}
   lastShown=S.offers.filter(x=>x!==o&&x.card).map(x=>x.card.id);for(const id of lastShown)passed[id]=(passed[id]||0)+1;
   if(o.trig)S.trig[o.host.id]=o.trig.id;
-  else if(o.type==='mod'){const m=S.mods[o.host.id]||(S.mods[o.host.id]={});m[o.mod.id]=(m[o.mod.id]||0)+1}
+  else if(o.type==='mod'){const m=S.mods[o.host.id]||(S.mods[o.host.id]={});m[o.mod.id]=(m[o.mod.id]||0)+1;S.lastMod={host:o.host.id,mod:o.mod.id}}
   else{const c=o.card;
     const old=slotHolder(c);if(old){removeCard(old.id);banner(c.name+' replaces '+old.name)}
-    S.lv[c.id]=1;S.picks.push(c.id);S.hearts=Math.min(S.hearts,maxH());if(c.syn&&!save.syn.includes(c.id)){save.syn.push(c.id);persist()}}
-  S.pickCount++;if(S.pickCount%10===0)S.reroll++;snd(660,.12,'square',.05,400);$('pick').hidden=true;chips();
+    S.lv[c.id]=1;S.picks.push(c.id);S.hearts=Math.min(S.hearts,maxH());if(c.id==='garage')S.forceCut=true;if(c.id==='countdown')S.clock=Math.max(S.clock,90);if(c.syn&&!save.syn.includes(c.id)){save.syn.push(c.id);persist()}}
+  S.pickCount++;if(S.pickCount%10===0)S.reroll++;snd(660,.12,'square',.05,400);
+  if(--S.pickLeft>0){S.offers=S.offers.filter(x=>x!==o&&(x.card?!L(x.card.id):true));if(S.offers.length){$('pickeyebrow').textContent='Pick one more';$('pickhead').textContent='Pick one more.';$('cards').innerHTML=S.offers.map(cardHTML).join('');chips();return}}
+  if(L('pact')){const pr=CARDS.filter(c=>c.type==='prompt'&&FIRE[c.id]&&!L(c.id)&&unlocked(c.id)&&!excluded(c));if(pr.length){const c=pr[Math.floor(rng()*pr.length)];S.lv[c.id]=1;S.picks.push(c.id);floater('Pact: '+c.name,player.p.clone(),true)}}
+  if(L('echo')&&S.pickCount%3===0&&S.lastMod){const m=S.lastMod,hosts=S.picks.filter(id=>id!==m.host&&stacks(id,m.mod)<2&&(m.mod==='score'?byId[id].earn:byId[id].mods&&byId[id].mods[m.mod]));
+    if(hosts.length){const t=hosts[Math.floor(rng()*hosts.length)],mm=S.mods[t]||(S.mods[t]={});mm[m.mod]=(mm[m.mod]||0)+1;banner('Echo: '+MODS.find(x=>x.id===m.mod).name+' '+byId[t].name)}}
+  $('pick').hidden=true;chips();
   if(S.pickCount>1)S.hearts=Math.min(maxH(),S.hearts+1);
+  if(L('countdown'))S.clock=Math.min(180,S.clock+10);
   resumePlay();
 }
 
 /* ---------- flow ---------- */
 // After a choice: apply the new card and carry on from exactly where play stopped.
 function resumePlay(){
-  applyStatics();timers.pick=PICK_EVERY;jumpQ=false;for(const k in actQ)actQ[k]=false;
+  applyStatics();timers.pick=PICK_EVERY*draftNeed();S.pickBase=S.earned;S.koSince=0;S.lapN=0;lapMk.visible=false;S.cleanT=0;jumpQ=false;
+  if(L('foresight'))S.nextOffers=pickOffers();else S.nextOffers=null;for(const k in actQ)actQ[k]=false;
   if(S.t===0){const[sx,sz]=ARENA.nearest(0,0,2);player.p.set(sx,player.r+ARENA.fy(sx,sz),sz);player.v.set(0,0,0);banner('Go!')}
   player.inv=Math.max(player.inv,1);S.phase='play';hudCache='';last=performance.now();if(coarse)$('touch').hidden=false;
 }
@@ -1302,7 +1406,7 @@ function refreshTitle(){
   $('unlockall').textContent=save.all?'LOCK CARDS AGAIN':'UNLOCK ALL CARDS';$('unlockall').hidden=!storageOK;
 }
 function gameOver(){
-  if(S.phase==='over')return;S.phase='over';$('pause').hidden=true;const sc=Math.round(S.score),wasBest=sc>save.best&&sc>0;
+  if(S.phase==='over')return;S.phase='over';$('pause').hidden=true;if(L('decay'))S.score=Math.max(S.score,S.peak);const sc=Math.round(S.score),wasBest=sc>save.best&&sc>0;
   const before=unlockedN();save.xp+=sc;const after=unlockedN();if(sc>save.best)save.best=sc;
   if(S.run==='daily'&&(save.daily.day!==S.day||sc>save.daily.score))save.daily={day:S.day,score:sc};
   persist();
@@ -1317,7 +1421,7 @@ function gameOver(){
 function startRun(mode,data){
   if(typeof mode!=='string')mode='normal';audioInit();
   Object.assign(S,{run:mode,day:today(),seed:mode==='daily'?today():mode==='code'?data.seed:(Math.random()*2147483647)|0,code:'',
-    picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:BOSS_EVERY,bossEnd:0,bossPts:0,bossKills:0,hunt:0});
+    picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,earned:0,pickBase:0,koSince:0,lapN:0,cleanT:0,unbanked:0,clock:60,peak:0,rentT:60,rentBase:0,infl:1,inflF:1,forceCut:false,lastMod:null,nextOffers:null,pickLeft:1,reroll:1,pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:BOSS_EVERY,bossEnd:0,bossPts:0,bossKills:0,hunt:0});
   lastShown=[];passed={};lbPosted=false;seedRng(S.seed);musicSetup();
   resetRunState();player.p.set(0,player.r,0);player.v.set(0,0,0);
   $('title').hidden=true;$('over').hidden=true;$('pick').hidden=true;$('hud').hidden=false;hudCache='';
@@ -1357,7 +1461,7 @@ function frame(now){
   renderer.render(scene,camera);requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__fc={S,L,LB,ARENA,SHAPES,excluded,slotHolder,pk,spawnPickup,resumePlay,refreshBoard,save,encodeBuild,decodeBuild,unlocked,choose,player,update,CARDS,MODS,TRIGS,PAY,FIRE,stick,ev,hill,flag,startRun,jump(){jumpQ=true},dash(){actQ.dash=true},act(k){actQ[k]=true},
+window.__fc={S,L,LB,ARENA,SHAPES,excluded,slotHolder,lapMk,bankMk,get pks(){return pks},spawnPickup,draftProgress,resumePlay,refreshBoard,save,encodeBuild,decodeBuild,unlocked,choose,player,update,CARDS,MODS,TRIGS,PAY,FIRE,stick,ev,hill,flag,startRun,jump(){jumpQ=true},dash(){actQ.dash=true},act(k){actQ[k]=true},
   get bodies(){return bodies},get orbs(){return orbs},get meteors(){return meteors},get mines(){return mines},get R(){return R},
   arms(){const a=laserPivot.children.filter(m=>m.userData.i!==undefined);return a.map(m=>laserA+m.userData.i*6.283/a.length)}};
 })();
