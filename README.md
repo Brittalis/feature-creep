@@ -14,4 +14,4 @@ One continuous run. Every 20 s a card appears on the plate; roll into it to paus
 - **Synergies** are rare cards offered once you own both of their parents.
 
 ## Leaderboard
-The leaderboard stays hidden until `LB = {url, key}` near the top of the script in `index.html` is filled in. `leaderboard.sql` sets up the scores table for a Supabase project. The `sprints` column holds minutes survived.
+The leaderboard stays hidden until `LB = {url, key}` near the top of the script in `index.html` is filled in. `leaderboard.sql` sets up the scores table for a Supabase project. The `sprints` column holds minutes survived. Scores are stamped with `GAME_VERSION` (in `index.html`); bump it when a release changes balance, and the "Current Version" tab starts fresh. Existing projects need the migration at the bottom of `leaderboard.sql`.
