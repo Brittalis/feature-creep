@@ -2,7 +2,7 @@
 
 A 3D arena game you design while you play: pick 1 of 3 cards every sprint until the game you built beats you.
 
-Play it at https://brittalis.github.io/feature-creep/ once GitHub Pages is on (Settings → Pages → Deploy from branch `main`, folder `/`).
+Play it at https://brittalis.github.io/feature-creep/
 
 ## How it plays
 One continuous run. Every 20 s a card appears on the plate; roll into it to pause and pick 1 of 3. Picks cycle Rule → Prompt → Modifier, every 10th pick offers a cut, and a boss arrives every 200 s.
