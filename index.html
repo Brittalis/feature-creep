@@ -35,6 +35,8 @@ body{background:var(--sky-deep);color:var(--paper);font-family:var(--body);font-
 #mid{flex:1;max-width:340px;min-width:0;text-align:center}
 #phase{font-weight:700;font-size:13px;letter-spacing:.14em;text-transform:uppercase;text-shadow:2px 2px 0 var(--ink)}
 #bar{height:12px;border:3px solid var(--ink);background:var(--sky-deep);margin-top:6px}
+#bar.ready #barfill{background:var(--mint);animation:ready .6s ease-in-out infinite alternate}
+@keyframes ready{to{opacity:.45}}
 #barfill{height:100%;width:100%;background:var(--sun);transform-origin:left}
 #hearts{font-size:clamp(20px,4vw,30px);letter-spacing:2px;color:var(--hot);text-shadow:2px 2px 0 var(--ink);white-space:nowrap}
 #hearts i{font-style:normal;color:var(--sky-deep)}
@@ -42,7 +44,7 @@ body{background:var(--sky-deep);color:var(--paper);font-family:var(--body);font-
 .chip b{color:var(--sun)}
 .chip{font-size:11px;font-weight:700;letter-spacing:.03em;padding:2px 6px;background:var(--ink);border-left:6px solid var(--c)}
 #mute,#pausebtn{pointer-events:auto;font:700 12px var(--body);letter-spacing:.1em;color:var(--paper);background:var(--ink);border:0;padding:6px 10px;cursor:pointer}
-#tracker{position:absolute;top:62px;left:0;right:0;display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding-inline:max(16px,env(safe-area-inset-left,0px))}
+#tracker{position:absolute;top:62px;left:50%;transform:translateX(-50%);width:min(620px,56%);display:flex;flex-wrap:wrap;gap:4px;justify-content:center;padding-inline:max(16px,env(safe-area-inset-left,0px))}
 .trk,.abl{position:relative;font-size:10px;font-weight:700;letter-spacing:.07em;text-transform:uppercase;padding:2px 7px;background:var(--ink);border:1px solid var(--hot);overflow:hidden;white-space:nowrap}
 .trk i,.abl i{position:absolute;inset:0;background:var(--hot);opacity:.6;transform-origin:left;transform:scaleX(0)}
 .trk b,.abl b{position:relative;font-weight:700}
@@ -343,12 +345,12 @@ const LIKES={grapple:TARGETS,bomb:TARGETS.concat('crates'),crates:['dash','slam'
 for(const c of CARDS){const r=REQ[c.id];c.likes=LIKES[c.id];
   if(r)c.req=()=>r==='prompt'?CARDS.some(x=>x.type==='prompt'&&L(x.id)):r==='goal'?CARDS.some(x=>x.goal&&L(x.id)):r.some(L)}
 const ORDER=['rule','prompt','mod'];
-const SPRINT_LEN=20, R0=11, G0=28, MAXH=5;
+const PICK_EVERY=20, BOSS_EVERY=200, BOSS_LEN=30, PICK_DRIFT=15, R0=11, G0=28, MAXH=5;
 const maxH=()=>L('glass')?3:MAXH;
 const VERBS=[{id:'dash',key:'Shift',label:'Dash'},{id:'grapple',key:'E',label:'Hook'},{id:'bomb',key:'F',label:'Bomb'},{id:'blink',key:'Q',label:'Blink'}];
 
 /* ---------- state ---------- */
-const S={phase:'title',run:'normal',seed:1,day:0,code:'',picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,sprint:0,t:0,left:0,launch:false,launchT:0,reroll:1,offers:[],pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',len:SPRINT_LEN,boss:false,bossDown:false,bossPts:0,bossKills:0,hunt:0};
+const S={phase:'title',run:'normal',seed:1,day:0,code:'',picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,offers:[],pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:200,bossEnd:0,bossPts:0,bossKills:0,hunt:0};
 const L=id=>S.lv[id]?1:0;
 const stacks=(id,stat)=>(S.mods[id]||{})[stat]||0;
 const MF=Object.fromEntries(MODS.map(m=>[m.id,m.f]));
@@ -407,7 +409,7 @@ async function refreshBoard(){
       const nm=document.createElement('span');nm.className='nm';nm.textContent=String(r.name||'?');
       if(r.mode==='daily'){const t=document.createElement('span');t.className='tg';t.textContent='DAILY';nm.appendChild(t)}
       const sc=document.createElement('span');sc.className='sc';sc.textContent=fmt(+r.score||0);
-      b.append(rk,nm,sc);b.title=(r.sprints?r.sprints+' sprints · ':'')+'click to load this build';
+      b.append(rk,nm,sc);b.title=(r.sprints?r.sprints+' min · ':'')+'click to load this build';
       if(r.code&&decodeBuild(r.code))b.onclick=()=>{$('codein').value=r.code;$('playcode').classList.remove('ghost');$('codein').focus()};
       li.appendChild(b);list.appendChild(li)});
     note.hidden=rows.length>0;note.textContent='No scores yet. Be the first.'}
@@ -427,7 +429,7 @@ async function submitScore(e){
   if(!name){msg.textContent='Type a name first';inp.focus();return}
   try{localStorage.setItem('fc-name',name)}catch(e){}
   const score=Math.round(S.score);btn.disabled=true;btn.textContent='Posting…';
-  try{await lbSubmit({name,score,sprints:Math.max(1,S.sprint),picks:S.pickCount,mode:S.run==='daily'?'daily':'normal',code:(S.code||'').slice(0,400)});
+  try{await lbSubmit({name,score,sprints:Math.max(1,Math.ceil(S.t/60)),picks:S.pickCount,mode:S.run==='daily'?'daily':'normal',code:(S.code||'').slice(0,400)});
     lbPosted=true;btn.textContent='Posted';msg.textContent='Posted';
     try{const rk=await lbRank(score);if(rk)msg.textContent='Posted · #'+rk+' on the leaderboard'}catch(e){}}
   catch(err){btn.disabled=false;btn.textContent='Submit score';msg.textContent='Could not post your score. Check your connection and try again.'}}
@@ -514,7 +516,7 @@ const ev={flipPending:false,stampT:-1,shrinkCycle:0,shrinkStart:0};
 function clearList(a){a.forEach(o=>world.remove(o.mesh||o));a.length=0}
 function clearEntities(){
   bodies.forEach(b=>{if(b!==player)world.remove(b.mesh)}); bodies=[player];
-  [orbs,shots,bullets,turrets,bumpers,wreck,mines,bombs].forEach(clearList);
+  [orbs,shots,bullets,mines,bombs].forEach(clearList);clearStatics();
   meteors.forEach(m=>{world.remove(m.ring);world.remove(m.rock)}); meteors.length=0;
   while(laserPivot.children.length)laserPivot.remove(laserPivot.children[0]);
 }
@@ -548,7 +550,14 @@ function spawnStampede(){
   ev.stampT=S.t;banner('Stampede!');nz(1.1,.3,'lowpass',260,90);snd(55,.9,'sawtooth',.06,20);
 }
 
-function setupStatics(){
+function clearStatics(){
+  [turrets,bumpers,wreck].forEach(clearList);
+  while(laserPivot.children.length)laserPivot.remove(laserPivot.children[0]);
+}
+// Rebuild the scenery that depends on which cards you own. Bodies, pickups and timers keep running,
+// so a card taken mid-run changes the game in place.
+function applyStatics(){
+  clearStatics();
   const nt=L('turrets')?Math.round(2*mv('turrets','count')):0, off=rand(0,6.28);
   for(let i=0;i<nt;i++){const g=new T.Group(),base=new T.Mesh(GEO.cyl,MAT.turret);base.scale.set(.5,1.6,.5);g.add(base);
     const head=new T.Mesh(GEO.cone,MAT.shot);head.position.y=1.1;g.add(head);world.add(shadowed(g));
@@ -563,13 +572,55 @@ function setupStatics(){
   const nw=L('orbit')?Math.round(2*mv('orbit','count')):0,ws=.42*mv('orbit','size');
   for(let i=0;i<nw;i++){const m=new T.Mesh(GEO.sphere,MAT.iron);m.scale.setScalar(ws);world.add(shadowed(m));wreck.push({mesh:m,p:m.position,r:ws})}
   {const c=stacks('hill','score')?0xffc21a:0x3df0c2;hill.mesh.material.color.set(c);hillRing.material.color.set(c)}
-  hill.r=2.6*mv('hill','size');hill.mesh.scale.setScalar(hill.r);hill.mesh.visible=!!L('hill'); hill.p.set(0,0,0); hill.t=0;
-  pcell.fill(0);pdirty=true;paintMesh.visible=!!L('paint');for(const k in cds)cds[k]=0;hookT=0;hookLine.visible=false;player.airJ=0;
+  hill.r=2.6*mv('hill','size');hill.mesh.scale.setScalar(hill.r);if(!hill.mesh.visible&&L('hill')){hill.p.set(0,0,0);hill.t=0}hill.mesh.visible=!!L('hill');
+  if(!paintMesh.visible&&L('paint')){pcell.fill(0);pdirty=true}paintMesh.visible=!!L('paint');
   const big=L('big');player.r=big?1:.6;player.m=big?3:1;player.mesh.scale.setScalar(player.r);
-  flag.mesh.visible=!!L('courier');flag.on=false;edgeRing.visible=!!L('greed');canvas.style.filter='';plateTop.emissiveIntensity=0;
-  Object.assign(timers,FIRST,{dummy:0,orb:0,blast:0,airAcc:0,hillAcc:0,runner:0,med:8,ball:1,crate:0});Object.assign(tper,FIRST);fireQ.length=0;for(const k in trigCount){trigCount[k]=0;trigLast[k]=-9}
-  Object.assign(ev,{flipPending:false,flipT:0,stampT:-1,shrinkCycle:0,shrinkStart:0,gustT:0,mirrorT:0,lavaT:0,pinT:-9,pinStreak:0,bossT:3,bossI:0});buildTracker();S.lastFall=-1;S.lastScore=-9;S.streak=0;
+  if(!flag.mesh.visible&&L('courier'))flag.on=false;flag.mesh.visible=!!L('courier');edgeRing.visible=!!L('greed');
+  // prompts you just gained start on their first-fire timer; ones you already had keep counting
+  for(const id in FIRE)if(L(id)&&timers[id]===undefined){timers[id]=tper[id]=FIRST[id]}
+  buildTracker();
 }
+// Everything that starts fresh with a new run.
+function resetRunState(){
+  clearEntities();
+  for(const k in timers)delete timers[k];for(const k in tper)delete tper[k];
+  Object.assign(timers,{dummy:0,orb:0,blast:0,airAcc:0,hillAcc:0,runner:0,med:10,ball:1,crate:0,pick:PICK_EVERY});
+  fireQ.length=0;for(const k in trigCount){delete trigCount[k];delete trigLast[k]}
+  pcell.fill(0);pdirty=true;paintMesh.visible=false;hill.mesh.visible=false;flag.mesh.visible=false;flag.on=false;
+  for(const k in cds)cds[k]=0;hookT=0;hookLine.visible=false;player.airJ=0;canvas.style.filter='';plateTop.emissiveIntensity=0;
+  Object.assign(ev,{flipPending:false,flipT:0,stampT:-1,shrinkCycle:0,shrinkStart:0,gustT:0,mirrorT:0,lavaT:0,pinT:-9,pinStreak:0,bossT:3,bossI:0});
+  S.lastFall=-1;S.lastScore=-9;S.streak=0;
+  removePickup();applyStatics();
+}
+
+/* ---------- card pickups ---------- */
+// A floating card on the plate. Touching it pauses the game and opens the 1-of-3 choice.
+const PK_COL={rule:0x3df0c2,prompt:0xff3d77,mod:0xffd23f,cut:0xff9140};
+const pk={mesh:new T.Group(),p:new V3(),on:false,t:0,kind:'rule'};
+{const card=new T.Mesh(new T.BoxGeometry(1.7,2.3,.1),new T.MeshLambertMaterial({color:0xffffff,emissive:0xffffff,emissiveIntensity:.35}));card.position.y=1.6;pk.card=card;pk.mesh.add(card);
+ const face=new T.Mesh(new T.BoxGeometry(1.3,1.8,.12),new T.MeshBasicMaterial({color:0xfff8e8}));face.position.y=1.6;pk.face=face;pk.mesh.add(face);
+ const ring=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.7}));ring.scale.setScalar(1.6);ring.position.y=.04;pk.ring=ring;pk.mesh.add(ring);
+ const beam=new T.Mesh(GEO.cyl,new T.MeshBasicMaterial({color:0xffffff,transparent:true,opacity:.35}));beam.scale.set(.08,9,.08);beam.position.y=4.5;pk.beam=beam;pk.mesh.add(beam);
+ pk.mesh.visible=false;world.add(pk.mesh)}
+const nextIsCut=()=>S.pickCount>0&&S.pickCount%10===0&&S.cutAt!==S.pickCount;
+const nextKind=()=>nextIsCut()?'cut':ORDER[S.pickCount%3];
+function spawnPickup(){
+  const[x,z]=spot(.7,4);pk.p.set(x,0,z);pk.on=true;pk.t=0;pk.kind=nextKind();
+  const c=PK_COL[pk.kind];pk.card.material.color.set(c);pk.card.material.emissive.set(c);pk.ring.material.color.set(c);pk.beam.material.color.set(c);
+  pk.mesh.visible=true;ringFx(x,z,2,c);snd(880,.12,'triangle',.06,440);snd(1320,.12,'triangle',.05,0,.1);
+  banner(pk.kind==='cut'?'Cut card':'New '+TYPE[pk.kind][0].toLowerCase()+' card');
+}
+function removePickup(){pk.on=false;pk.mesh.visible=false}
+function updatePickup(dt){
+  if(!pk.on){if(!S.boss){timers.pick-=dt;if(timers.pick<=0)spawnPickup()}return}
+  pk.t+=dt;
+  // an ignored card comes looking for you
+  if(pk.t>PICK_DRIFT){const dx=player.p.x-pk.p.x,dz=player.p.z-pk.p.z,d=Math.hypot(dx,dz)||1,sp=Math.min(6,1.5+(pk.t-PICK_DRIFT)*.3);pk.p.x+=dx/d*sp*dt;pk.p.z+=dz/d*sp*dt}
+  const off=Math.hypot(pk.p.x,pk.p.z);if(off>R*.9){pk.p.x*=R*.9/off;pk.p.z*=R*.9/off}
+  if(Math.hypot(player.p.x-pk.p.x,player.p.z-pk.p.z)<player.r+.8&&player.p.y<3.5&&player.p.y>-.5){removePickup();burst(player.p,PK_COL[pk.kind],12);hitStop(.06);showPick()}
+}
+function pickupVisuals(rdt){if(!pk.mesh.visible)return;pk.mesh.position.set(pk.p.x,.15*Math.sin(performance.now()/300),pk.p.z);pk.card.rotation.y+=rdt*2;pk.face.rotation.y=pk.card.rotation.y;
+  pk.ring.scale.setScalar(1.6+.2*Math.sin(performance.now()/200));pk.beam.material.opacity=pk.t>PICK_DRIFT?.6:.35}
 
 /* ---------- fx ---------- */
 let shake=0;
@@ -647,7 +698,7 @@ function add(n,id,p,k=1){let v=n*payMul(id)*k;const bounty=byId[id].type==='prom
   S.score+=v;S.by[id]=(S.by[id]||0)+v;S[bounty?'bounty':'income']+=v;
   if(p)floater((bounty?'Bounty +':'+')+Math.round(v),p,bounty,stacks(id,'score')>0);if(!bounty)emit('score');if(bounty)snd(990,.09,'triangle',.05,500)}
 
-function bossPay(n,p){const v=n*(S.sprint/10)*(L('glass')?1.5:1);S.score+=v;S.bounty+=v;S.bossPts+=v;if(n>=300)S.bossKills++;
+function bossPay(n,p){const v=n*S.bossN*(L('glass')?1.5:1);S.score+=v;S.bounty+=v;S.bossPts+=v;if(n>=300)S.bossKills++;
   floater('Boss bounty +'+Math.round(v),p,true,true);for(let i=0;i<4;i++)snd([523,659,784,1047][i],.18,'triangle',.08,0,i*.1)}
 function smash(b){if(b.dead)return;b.dead=true;world.remove(b.mesh);burst(b.p,0xc98b4a,8);add(PAY.crates,'crates',b.p.clone());snd(180,.1,'square',.06,-80);nz(.12,.12,'bandpass',1200)}
 
@@ -747,7 +798,7 @@ const nx_=(c,d2)=>c/Math.sqrt(d2);
 const wrap=a=>{a=(a+Math.PI)%(2*Math.PI);if(a<0)a+=2*Math.PI;return a-Math.PI};
 function update(dt){
   S.t+=dt;
-  const ramp=(1+Math.max(0,S.sprint-6)*.05)*(S.boss?1.6:1);
+  const ramp=(1+Math.max(0,S.t-120)/400)*(S.boss?1.6:1);
   const g=G0*(L('moon')?.42:1), ice=L('ice'), fr=ice?.45:5, bouncy=L('bouncy');
   // plate radius
   let Rb=R0*(L('tiny')?.8:1);
@@ -788,7 +839,7 @@ function update(dt){
   if(L('orbs')){const cap=Math.round(6*mv('orbs','count'));timers.orb-=dt;
     if(timers.orb<=0&&orbs.filter(o=>o.id==='orbs').length<cap){spawnOrb();timers.orb=.7/mv('orbs','count')}}
   if(L('tag')){timers.runner-=dt;if(timers.runner<=0&&bodies.filter(b=>b.kind==='runner').length<Math.round(mv('tag','count'))){spawnRunner();timers.runner=1}}
-  if(L('medkit')){timers.med-=dt;if(timers.med<=0){timers.med=999;for(let i=0,n=Math.round(mv('medkit','count'));i<n;i++)spawnHeart()}}
+  if(L('medkit')){timers.med-=dt;if(timers.med<=0){timers.med=PICK_EVERY;for(let i=0,n=Math.round(mv('medkit','count'));i<n;i++)spawnHeart()}}
   // --- prompts: each fires on its timer, or on its trigger once rewired
   if(L('juggle')){timers.ball-=dt;if(timers.ball<=0&&bodies.filter(b=>b.kind==='ball').length<Math.round(mv('juggle','count'))){spawnBall();timers.ball=1.5}}
   if(L('crates')){timers.crate-=dt;if(timers.crate<=0&&bodies.filter(b=>b.kind==='crate').length<Math.round(7*mv('crates','count'))){spawnCrate();timers.crate=.9/mv('crates','count')}}
@@ -963,7 +1014,10 @@ function update(dt){
 
   bodies=bodies.filter(b=>!b.dead);
 
-  S.left-=dt;if(S.left<=0)endSprint();
+  updatePickup(dt);
+  // the boss keeps its old rhythm: every 200 s of play, for 30 s
+  if(!S.boss&&S.t>=S.nextBoss&&S.phase==='play')startBoss();
+  if(S.boss&&S.t>=S.bossEnd)endBoss();
 }
 
 function visuals(dt,rdt){
@@ -979,7 +1033,7 @@ function visuals(dt,rdt){
   player.mesh.visible=!(player.inv>0&&S.phase==='play'&&Math.floor(S.t*18)%2);
   for(let i=rings.length-1;i>=0;i--){const r=rings[i];r.t+=rdt*2.6;r.mesh.scale.setScalar(.3+r.rad*r.t);r.mesh.material.opacity=1-r.t;if(r.t>=1){world.remove(r.mesh);rings.splice(i,1)}}
   for(let i=parts.length-1;i>=0;i--){const p=parts[i];p.t+=rdt;p.v.y-=20*rdt;p.mesh.position.addScaledVector(p.v,rdt);p.mesh.rotation.x+=rdt*9;if(p.t>.7){world.remove(p.mesh);parts.splice(i,1)}}
-  debris.rotation.y+=rdt*.02;
+  debris.rotation.y+=rdt*.02;pickupVisuals(rdt);
   if(hookT>0){hookT-=rdt;hookLine.visible=true;hookLine.geometry.setFromPoints([player.p,hookTo])}else hookLine.visible=false;
   const night=L('night'),k=1-Math.exp(-3*rdt);
   scene.background.lerp(night?NIGHT:SKY,k);scene.fog.color.copy(scene.background);
@@ -1004,8 +1058,9 @@ let camSpin=0;const camPos=new V3(0,16,17),camGoal=new V3(),camLook=new V3(),cam
 /* ---------- HUD ---------- */
 let hudCache='';
 function hud(){
-  const sc=Math.round(S.score),key=sc+'|'+S.hearts+'|'+S.sprint+'|'+S.picks.length+'|'+maxH();
-  $('barfill').style.transform=`scaleX(${clamp(S.left/S.len,0,1)})`;
+  const sc=Math.round(S.score),clock=Math.floor(S.t),key=sc+'|'+S.hearts+'|'+clock+'|'+S.picks.length+'|'+maxH()+'|'+S.boss+'|'+pk.on;
+  $('barfill').style.transform=`scaleX(${S.boss?clamp((S.bossEnd-S.t)/BOSS_LEN,0,1):pk.on?1:clamp(1-timers.pick/PICK_EVERY,0,1)})`;
+  $('bar').classList.toggle('ready',pk.on&&!S.boss);
   if($('tracker').hidden!==(S.phase!=='play'))$('tracker').hidden=$('abil').hidden=S.phase!=='play';
   for(const id in trk){let f=1;if(FIRE[id])f=S.trig[id]?(trigCount[id]||0)/trigN(id):1-timers[id]/(tper[id]||1);trk[id].firstChild.style.transform=`scaleX(${clamp(f,0,1)})`}
   for(const id in abl)abl[id].firstChild.style.transform=`scaleX(${clamp(1-cds[id]/(cdmax[id]||1),0,1)})`;
@@ -1013,8 +1068,9 @@ function hud(){
   if($('score').textContent!==fmt(sc)){const s=$('score');s.textContent=fmt(sc);s.classList.remove('bump');void s.offsetWidth;s.classList.add('bump')}
   $('mult').textContent='Income '+fmt(S.income)+' · Bounties '+fmt(S.bounty);
   $('hearts').innerHTML='♥'.repeat(Math.max(0,S.hearts))+'<i>'+'♥'.repeat(Math.max(0,maxH()-S.hearts))+'</i>';
-  $('phase').innerHTML=(S.run==='daily'?'Daily · ':S.run==='code'?'Shared · ':'')+(S.sprint?(S.boss?'Boss sprint ':'Sprint ')+S.sprint+'<span class="cnt"> · '+S.picks.length+' cards</span>':'Planning');
+  $('phase').innerHTML=(S.run==='daily'?'Daily · ':S.run==='code'?'Shared · ':'')+(S.boss?'Boss · ':'')+mmss(S.t)+'<span class="cnt"> · '+S.picks.length+' cards'+(pk.on&&!S.boss?' · grab the card':'')+'</span>';
 }
+const mmss=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
 const modNames=id=>MODS.flatMap(m=>Array(stacks(id,m.id)).fill(m.name)).concat(S.trig[id]?[trigById[S.trig[id]].name]:[]);
 // One pill per prompt, filling up until it fires; one per active verb, filling as it recharges.
 function buildTracker(){
@@ -1073,7 +1129,7 @@ function cutOffers(){
   if(pr[0])out.push(pr[0]);if(ru[0])out.push(ru[0]);for(const c of shuffle(ok.slice()))if(out.length<3&&!out.includes(c))out.push(c);
   return out.map(card=>({type:'cut',card}));
 }
-const HEADS={rule:'Change the rules.',prompt:'What happens during the round?',mod:'Multiply something you already picked.'};
+const HEADS={rule:'Change the rules.',prompt:'What happens while you play?',mod:'Multiply something you already picked.'};
 function cardHTML(o,i){
   let name,desc,pay,tag;
   if(o.type==='cut'){const c=o.card,m=modNames(c.id);name='Cut '+c.name;desc=c.desc;tag=TYPE[c.type][0].toUpperCase();
@@ -1093,9 +1149,9 @@ function showPick(reroll){
   S.phase='pick';
   S.mode=S.pickCount>0&&S.pickCount%10===0&&S.cutAt!==S.pickCount?'cut':'draft';
   S.offers=S.mode==='cut'?cutOffers():makeOffers();
-  if(!S.offers.length){if(S.mode==='cut'){S.cutAt=S.pickCount;return showPick(reroll)}S.pickCount++;$('pick').hidden=true;return startSprint()}
+  if(!S.offers.length){if(S.mode==='cut'){S.cutAt=S.pickCount;return showPick(reroll)}S.pickCount++;$('pick').hidden=true;return resumePlay()}
   const type=S.offers[0].type;
-  $('pickeyebrow').textContent=S.mode==='cut'?S.pickCount+' picks in · Cut':'Pick '+(S.pickCount+1)+' · '+TYPE[type][0];
+  $('pickeyebrow').textContent=(S.mode==='cut'?S.pickCount+' picks in · Cut':'Pick '+(S.pickCount+1)+' · '+TYPE[type][0])+(S.t>0?' · '+mmss(S.t):'');
   $('pickhead').textContent=S.mode==='cut'?'Cut one card, or keep everything.':S.pickCount?HEADS[type]:'What is this game about?';
   $('cards').innerHTML=S.offers.map(cardHTML).join('');
   $('skip').hidden=S.mode!=='cut';
@@ -1111,22 +1167,27 @@ function choose(i){
   else{const c=o.card;
     if(c.cam)for(const x of CARDS)if(x.cam&&L(x.id)){S.lv[x.id]=0;S.picks=S.picks.filter(id=>id!==x.id)}
     S.lv[c.id]=1;S.picks.push(c.id);S.hearts=Math.min(S.hearts,maxH());if(c.syn&&!save.syn.includes(c.id)){save.syn.push(c.id);persist()}}
-  S.pickCount++;if(S.pickCount%10===0)S.reroll++;snd(660,.12,'square',.05,400);$('pick').hidden=true;chips();startSprint();
+  S.pickCount++;if(S.pickCount%10===0)S.reroll++;snd(660,.12,'square',.05,400);$('pick').hidden=true;chips();
+  if(S.pickCount>1)S.hearts=Math.min(maxH(),S.hearts+1);
+  resumePlay();
 }
 
 /* ---------- flow ---------- */
-function startSprint(){
-  S.sprint++;S.boss=S.sprint%10===0;S.bossDown=false;S.left=S.len=S.boss?30:SPRINT_LEN;S.t=0;jumpQ=false;for(const k in actQ)actQ[k]=false;clearEntities();setupStatics();S.phase='play';hudCache='';
-  if(Math.hypot(player.p.x,player.p.z)>R0*.6||player.p.y<0){player.p.set(0,player.r,0);player.v.set(0,0,0)}
-  player.inv=1.5;if(coarse)$('touch').hidden=false;
-  if(S.boss){spawnBoss();const w=S.picks.map(id=>byId[id]).find(c=>c.type==='prompt');banner('Boss: '+(w?w.word:'Crunch')+' Deadline');snd(110,.8,'sawtooth',.1,-50);nz(.8,.2,'lowpass',300,80)}
-  else banner('Sprint '+S.sprint);
+// After a choice: apply the new card and carry on from exactly where play stopped.
+function resumePlay(){
+  applyStatics();timers.pick=PICK_EVERY;jumpQ=false;for(const k in actQ)actQ[k]=false;
+  if(S.t===0){player.p.set(0,player.r,0);player.v.set(0,0,0);banner('Go!')}
+  player.inv=Math.max(player.inv,1);S.phase='play';hudCache='';last=performance.now();if(coarse)$('touch').hidden=false;
 }
-function endSprint(){
-  snd(520,.15,'triangle',.06,300);
-  if(S.boss){if(!S.bossDown)bossPay(150,player.p.clone());S.hearts=maxH()}
-  else S.hearts=Math.min(maxH(),S.hearts+1);
-  showPick();
+function startBoss(){
+  S.boss=true;S.bossDown=false;S.bossN++;S.bossEnd=S.t+BOSS_LEN;ev.bossT=3;spawnBoss();
+  const w=S.picks.map(id=>byId[id]).find(c=>c.type==='prompt');banner('Boss: '+(w?w.word:'Crunch')+' Deadline');snd(110,.8,'sawtooth',.1,-50);nz(.8,.2,'lowpass',300,80);
+}
+function endBoss(){
+  S.boss=false;S.nextBoss+=BOSS_EVERY;
+  for(const b of bodies)if(b.kind==='boss'){b.dead=true;world.remove(b.mesh)}bodies=bodies.filter(b=>!b.dead);
+  if(!S.bossDown){bossPay(150,player.p.clone());banner('Boss survived')}
+  S.hearts=maxH();timers.pick=Math.min(timers.pick,1.5);
 }
 function gameTitle(){
   const P=S.picks.map(id=>byId[id]),pr=P.find(c=>c.type==='prompt'),go=P.find(c=>c.goal),w=P.filter(c=>c.type==='rule'&&c.word&&!c.goal).pop();
@@ -1139,7 +1200,7 @@ function buildSheet(){
   const lines=P.map(c=>{const m=modNames(c.id);return `${TYPE[c.type][0].padEnd(7)}${c.name}${m.length?' × '+m.join(' × '):''}  —  ${c.earn?fmt(S.by[c.id]||0):'no score'}`});
   if(S.bossPts)lines.push(`Boss   ${S.bossKills} knocked off  —  ${fmt(S.bossPts)}`);
   return `${gameTitle().toUpperCase()}\n${pitch}\n\n${lines.join('\n')}\n\nScore ${fmt(S.score)} = income ${fmt(S.income)} + bounties ${fmt(S.bounty)}\n`
-    +`Shut down in sprint ${S.sprint} after ${S.pickCount} picks\n\nBuild code: ${encodeBuild()}`;
+    +`Shut down at ${mmss(S.t)} after ${S.pickCount} picks\n\nBuild code: ${encodeBuild()}`;
 }
 function refreshTitle(){
   const n=unlockedN(),total=CARDS.length,open=save.all||!storageOK?total:total-LOCK_ORDER.length+n,nSyn=CARDS.filter(c=>c.syn).length;
@@ -1153,7 +1214,7 @@ function gameOver(){
   persist();
   const newly=LOCK_ORDER.slice(before,after).map(id=>byId[id].name);
   $('unlocks').textContent=save.all||!storageOK?'':newly.length?'Unlocked: '+newly.join(', '):after<LOCK_ORDER.length?fmt(need(after+1)-save.xp)+' more points unlocks '+byId[LOCK_ORDER[after]].name:'Every card is unlocked';
-  $('overeyebrow').textContent=(S.run==='daily'?'Daily build · ':S.run==='code'?'Shared build · ':'')+'Lasted '+S.sprint+' sprints'+(wasBest?' · new best':'');
+  $('overeyebrow').textContent=(S.run==='daily'?'Daily build · ':S.run==='code'?'Shared build · ':'')+'Lasted '+mmss(S.t)+(wasBest?' · new best':'');
   S.code=encodeBuild();try{if(S.picks.length)location.hash=S.code}catch(e){}
   setupSubmit(sc);
   $('gamename').textContent=gameTitle();$('finalscore').textContent=fmt(sc);$('sheet').textContent=buildSheet();
@@ -1162,12 +1223,12 @@ function gameOver(){
 function startRun(mode,data){
   if(typeof mode!=='string')mode='normal';audioInit();
   Object.assign(S,{run:mode,day:today(),seed:mode==='daily'?today():mode==='code'?data.seed:(Math.random()*2147483647)|0,code:'',
-    picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,sprint:0,t:0,left:0,launch:false,launchT:0,reroll:1,pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',len:SPRINT_LEN,boss:false,bossDown:false,bossPts:0,bossKills:0,hunt:0});
+    picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:BOSS_EVERY,bossEnd:0,bossPts:0,bossKills:0,hunt:0});
   lastShown=[];passed={};lbPosted=false;seedRng(S.seed);musicSetup();
-  clearEntities();setupStatics();player.p.set(0,player.r,0);player.v.set(0,0,0);
+  resetRunState();player.p.set(0,player.r,0);player.v.set(0,0,0);
   $('title').hidden=true;$('over').hidden=true;$('pick').hidden=true;$('hud').hidden=false;hudCache='';
   if(mode==='code'){for(const c of data.cards){S.lv[c.id]=1;S.picks.push(c.id);if(Object.keys(c.mods).length)S.mods[c.id]=c.mods;if(c.trig)S.trig[c.id]=c.trig}
-    S.pickCount=S.cutAt=S.picks.length;chips();return startSprint()}
+    S.pickCount=S.cutAt=S.picks.length;chips();return resumePlay()}
   chips();showPick();
 }
 function playCode(e){if(e)e.preventDefault();const d=decodeBuild($('codein').value);$('codeerr').hidden=!!d;
@@ -1179,7 +1240,7 @@ $('daily').onclick=()=>startRun('daily');$('pausebtn').onclick=pause;$('resume')
 document.addEventListener('visibilitychange',()=>{if(document.hidden)pause()});
 $('codeform').addEventListener('submit',playCode);
 $('unlockall').onclick=()=>{save.all=!save.all;persist();refreshTitle()};
-$('home').onclick=()=>{S.phase='title';$('over').hidden=true;$('hud').hidden=true;clearEntities();refreshTitle();readHash();refreshBoard();$('title').hidden=false};
+$('home').onclick=()=>{S.phase='title';$('over').hidden=true;$('hud').hidden=true;clearEntities();removePickup();refreshTitle();readHash();refreshBoard();$('title').hidden=false};
 $('copycode').onclick=()=>copyText(S.code,$('copycode'),$('sheet'));
 addEventListener('hashchange',readHash);readHash();refreshTitle();refreshBoard();
 $('submitbox').addEventListener('submit',submitScore);
@@ -1202,7 +1263,7 @@ function frame(now){
   renderer.render(scene,camera);requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__fc={S,L,LB,refreshBoard,save,encodeBuild,decodeBuild,unlocked,choose,player,update,CARDS,MODS,TRIGS,PAY,FIRE,stick,ev,hill,flag,startRun,startSprint,jump(){jumpQ=true},dash(){actQ.dash=true},act(k){actQ[k]=true},
+window.__fc={S,L,LB,pk,spawnPickup,resumePlay,refreshBoard,save,encodeBuild,decodeBuild,unlocked,choose,player,update,CARDS,MODS,TRIGS,PAY,FIRE,stick,ev,hill,flag,startRun,jump(){jumpQ=true},dash(){actQ.dash=true},act(k){actQ[k]=true},
   get bodies(){return bodies},get orbs(){return orbs},get meteors(){return meteors},get mines(){return mines},get R(){return R},
   arms(){const a=laserPivot.children.filter(m=>m.userData.i!==undefined);return a.map(m=>laserA+m.userData.i*6.283/a.length)}};
 })();
