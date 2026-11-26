@@ -121,6 +121,10 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
 #lblist .rk{color:var(--lilac);font-weight:700}
 #lblist .sc{font-weight:700;color:var(--sun)}
 #lblist .tg{font-size:10px;font-weight:700;letter-spacing:.08em;color:var(--mint);margin-left:4px}
+#lbtabs{display:flex;gap:4px}
+#lbtabs button{all:unset;box-sizing:border-box;flex:1;text-align:center;padding:4px 6px;font-size:12px;font-weight:700;letter-spacing:.04em;cursor:pointer;border:2px solid var(--paper);color:var(--paper)}
+#lbtabs button[aria-selected=true]{background:var(--sun);border-color:var(--sun);color:var(--ink)}
+#lbtabs button:focus-visible{outline:2px solid var(--mint);outline-offset:1px}
 #lbnote{font-size:12px;color:var(--lilac);margin:0}
 #submitbox{display:flex;flex-direction:column;align-items:center;gap:8px}
 #lbname{font:600 15px var(--body);padding:9px 12px;border:3px solid var(--paper);background:var(--ink);color:var(--paper);width:min(220px,52vw);min-width:0;-webkit-user-select:text;user-select:text}
@@ -196,6 +200,10 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
     <div id="career" class="eyebrow"></div>
     <aside id="lb" hidden aria-label="Leaderboard">
       <h3>Leaderboard</h3>
+      <div id="lbtabs" role="tablist">
+        <button type="button" role="tab" id="tabAll" aria-selected="true" data-tab="all">All time</button>
+        <button type="button" role="tab" id="tabVer" aria-selected="false" data-tab="ver">Current Version</button>
+      </div>
       <ol id="lblist"></ol>
       <p id="lbnote">Loading…</p>
     </aside>
@@ -472,6 +480,9 @@ function decodeBuild(code){const m=/^#?fc1-([0-9a-z]{1,7})-((?:[0-9a-z]{4})+)$/.
    Fill in the project URL and the anon (publishable) key. That key is meant to be public:
    the database only lets anonymous visitors read and insert scores. Empty = leaderboard hidden. */
 const LB={url:'https://wfzywfykvxyhjcigeimr.supabase.co',key:'sb_publishable_Ovq49AEtZj7qNi4pFuvkEg_w4IPlukM'};
+/* Bump GAME_VERSION when a release changes scoring or balance. Scores are stamped with it. */
+const GAME_VERSION='1.0';
+let lbTab='all';
 const lbOn=()=>!!(LB.url&&LB.key);
 async function lbFetch(path,opts={}){
   const ac=new AbortController(),tm=setTimeout(()=>ac.abort(),10000);
@@ -479,9 +490,9 @@ async function lbFetch(path,opts={}){
       headers:{apikey:LB.key,...(/^eyJ/.test(LB.key)?{Authorization:'Bearer '+LB.key}:{}),'Content-Type':'application/json',...(opts.headers||{})}});
     if(!r.ok)throw new Error('HTTP '+r.status);return r}
   finally{clearTimeout(tm)}}
-const lbTop=async()=>(await lbFetch('scores?select=name,score,sprints,mode,code&order=score.desc,id.asc&limit=10')).json();
+const lbTop=async()=>(await lbFetch('scores?select=name,score,sprints,mode,code,version&order=score.desc,id.asc&limit=10'+(lbTab==='ver'?'&version=eq.'+encodeURIComponent(GAME_VERSION):''))).json();
 const lbSubmit=async row=>(await lbFetch('scores',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(row)}));
-async function lbRank(score){const r=await lbFetch('scores?select=id&score=gt.'+(score|0),{method:'HEAD',headers:{Prefer:'count=exact'}});
+async function lbRank(score){const r=await lbFetch('scores?select=id&score=gt.'+(score|0)+(lbTab==='ver'?'&version=eq.'+encodeURIComponent(GAME_VERSION):''),{method:'HEAD',headers:{Prefer:'count=exact'}});
   const m=/\/(\d+)$/.exec(r.headers.get('content-range')||'');return m?+m[1]+1:null}
 let lbBusy=false;
 async function refreshBoard(){
@@ -491,14 +502,17 @@ async function refreshBoard(){
     rows.forEach((r,i)=>{const li=document.createElement('li'),b=document.createElement('button');b.type='button';
       const rk=document.createElement('span');rk.className='rk';rk.textContent=i+1;
       const nm=document.createElement('span');nm.className='nm';nm.textContent=String(r.name||'?');
+      if(lbTab==='all'&&r.version&&r.version!==GAME_VERSION){const t=document.createElement('span');t.className='tg';t.textContent='v'+r.version;nm.appendChild(t)}
       if(r.mode==='daily'){const t=document.createElement('span');t.className='tg';t.textContent='DAILY';nm.appendChild(t)}
       const sc=document.createElement('span');sc.className='sc';sc.textContent=fmt(+r.score||0);
-      b.append(rk,nm,sc);b.title=(r.sprints?r.sprints+' min · ':'')+'click to load this build';
+      b.append(rk,nm,sc);b.title=(r.sprints?r.sprints+' min · ':'')+(r.version?'v'+r.version+' · ':'')+'click to load this build';
       if(r.code&&decodeBuild(r.code))b.onclick=()=>{$('codein').value=r.code;$('playcode').classList.remove('ghost');$('codein').focus()};
       li.appendChild(b);list.appendChild(li)});
     note.hidden=rows.length>0;note.textContent='No scores yet. Be the first.'}
   catch(e){list.textContent='';note.textContent='Leaderboard offline'}
   finally{lbBusy=false}}
+$('lbtabs').addEventListener('click',e=>{const b=e.target.closest('button[data-tab]');if(!b||b.dataset.tab===lbTab)return;
+  lbTab=b.dataset.tab;for(const t of $('lbtabs').children)t.setAttribute('aria-selected',t===b);refreshBoard()});
 let lbPosted=false;
 function setupSubmit(sc){
   const box=$('submitbox'),msg=$('lbmsg'),btn=$('lbsubmit'),inp=$('lbname');
@@ -513,9 +527,9 @@ async function submitScore(e){
   if(!name){msg.textContent='Type a name first';inp.focus();return}
   try{localStorage.setItem('fc-name',name)}catch(e){}
   const score=Math.round(S.score);btn.disabled=true;btn.textContent='Posting…';
-  try{await lbSubmit({name,score,sprints:Math.max(1,Math.ceil(S.t/60)),picks:S.pickCount,mode:S.run==='daily'?'daily':'normal',code:(S.code||'').slice(0,400)});
+  try{await lbSubmit({name,score,sprints:Math.max(1,Math.ceil(S.t/60)),picks:S.pickCount,mode:S.run==='daily'?'daily':'normal',code:(S.code||'').slice(0,400),version:GAME_VERSION});
     lbPosted=true;btn.textContent='Posted';msg.textContent='Posted';
-    try{const rk=await lbRank(score);if(rk)msg.textContent='Posted · #'+rk+' on the leaderboard'}catch(e){}}
+    try{const rk=await lbRank(score);if(rk)msg.textContent='Posted · #'+rk+' on the '+(lbTab==='ver'?'current version ':'')+'leaderboard'}catch(e){}}
   catch(err){btn.disabled=false;btn.textContent='Submit score';msg.textContent='Could not post your score. Check your connection and try again.'}}
 
 /* ---------- three setup ---------- */
