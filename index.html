@@ -278,17 +278,17 @@ const CARDS=[
  {id:'blaster',type:'rule',name:'Autoblaster',desc:'Fires at the nearest target by itself. Shots shove.',pitch:'blast',mods:{speed:'Fires 1.5× faster.',force:'Shots shove 1.6× harder.'}},
  {id:'orbit',type:'rule',name:'Wrecking Balls',desc:'Iron balls orbit you and bat away whatever they touch.',pitch:'swing wrecking balls',mods:{count:'Twice as many balls.',size:'Bigger balls on a wider orbit.',speed:'Balls spin 1.5× faster.',force:'Balls hit 1.6× harder.'}},
  {id:'magnet',type:'rule',name:'Magnet',desc:'Orbs, coins and hearts fly to you from across the plate.',pitch:'magnetize loot',mods:{size:'Magnet reaches 1.6× further.'}},
- {id:'ice',type:'rule',name:'Ice Rink',desc:'No grip for anyone. All rule income ×1.5.',word:'Frozen'},
+ {id:'ice',type:'rule',slot:'floor',name:'Ice Rink',desc:'No grip for anyone. All rule income ×1.5.',word:'Frozen'},
  {id:'moon',type:'rule',name:'Moon Gravity',desc:'Everything falls slowly and jumps high.',word:'Lunar'},
- {id:'tilt',type:'rule',name:'Tilt-a-World',desc:'The plate tips and everything slides downhill.',word:'Tilted'},
+ {id:'tilt',type:'rule',slot:'tilt',name:'Tilt-a-World',desc:'The plate tips and everything slides downhill.',word:'Tilted'},
  {id:'bumpers',type:'rule',name:'Pinball',desc:'Bumpers sprout and punt anything that touches them.',word:'Pinball',mods:{count:'Twice as many bumpers.',force:'Bumpers punt 1.6× harder.'}},
- {id:'tiny',type:'rule',name:'Small Stage',desc:'A smaller plate. All prompt bounties ×1.5.',word:'Pocket'},
- {id:'night',type:'rule',name:'Lights Out',desc:'Dark, except near you. All prompt bounties ×1.5.',word:'Midnight'},
+ {id:'tiny',type:'rule',slot:'scale',name:'Small Stage',desc:'A smaller plate. All prompt bounties ×1.5.',word:'Pocket'},
+ {id:'night',type:'rule',slot:'sky',name:'Lights Out',desc:'Dark, except near you. All prompt bounties ×1.5.',word:'Midnight'},
  {id:'bouncy',type:'rule',name:'Rubber World',desc:'Everything bounces off everything, hard.',word:'Rubber'},
  {id:'boom',type:'rule',name:'Chain Reaction',desc:'Every pickup and knockout bursts into a shockwave.',word:'Explosive',mods:{size:'Bursts reach 1.6× further.',force:'Bursts throw 1.6× harder.'}},
- {id:'top',type:'rule',cam:1,name:'Top-Down',desc:'Bird\'s-eye view of the whole plate.',pitch:'top-down'},
- {id:'dizzy',type:'rule',cam:1,name:'Dizzy Cam',desc:'The camera circles forever. Your controls follow it.',pitch:'dizzy-cam'},
- {id:'worm',type:'rule',cam:1,name:'Worm\'s Eye',desc:'Low and close, right in the action.',pitch:'ground-level'},
+ {id:'top',type:'rule',cam:1,slot:'camera',name:'Top-Down',desc:'Bird\'s-eye view of the whole plate.',pitch:'top-down'},
+ {id:'dizzy',type:'rule',cam:1,slot:'camera',name:'Dizzy Cam',desc:'The camera circles forever. Your controls follow it.',pitch:'dizzy-cam'},
+ {id:'worm',type:'rule',cam:1,slot:'camera',name:'Worm\'s Eye',desc:'Low and close, right in the action.',pitch:'ground-level'},
  // Prompts: events that pay a bounty each time you come through one
  {id:'meteors',type:'prompt',name:'Meteor Shower',desc:'Rocks land where the ring closes. The blast hurts and scatters everything.',earn:'10 per meteor dodged',word:'Meteor',pitch:'meteors',mods:{count:'Meteors fall twice as often.',size:'Blasts are 1.6× wider.',speed:'Meteors land 1.5× sooner.'}},
  {id:'chasers',type:'prompt',name:'Bully Drop',desc:'Every few seconds a squad of red cubes drops in to shove you off.',earn:'15 per bully knocked off',word:'Bully',pitch:'bullies',mods:{count:'Squads are twice as big.',size:'Bullies are bigger and heavier.',speed:'Bullies charge 1.5× faster.'}},
@@ -321,6 +321,15 @@ const CARDS=[
  {id:'glass',type:'rule',name:'Glass Cannon',desc:'You can only hold 3 hearts. Everything pays ×1.5.',word:'Glass'},
  {id:'hunter',type:'rule',name:'Bounty Hunter',desc:'Every 6th bounty you collect heals a heart.',word:'Bounty'},
  {id:'momentum',type:'rule',name:'Momentum',desc:'Rule income grows with your speed, up to double at full tilt.',word:'Breakneck'},
+ // Arena shapes: one at a time (slot 'shape'). Taking another replaces it.
+ {id:'square',type:'rule',slot:'shape',shape:'square',name:'Square Deal',desc:'The plate becomes a square. Corners are traps.',word:'Boxed'},
+ {id:'donut',type:'rule',slot:'shape',shape:'donut',name:'Donut',desc:'A hole opens in the middle of the plate.',word:'Donut'},
+ {id:'islands',type:'rule',slot:'shape',shape:'islands',name:'Archipelago',desc:'The plate breaks into five islands. Jump the gaps.',word:'Island'},
+ {id:'runway',type:'rule',slot:'shape',shape:'runway',name:'Runway',desc:'A long, narrow strip.',word:'Runway'},
+ {id:'twin',type:'rule',slot:'shape',shape:'twin',name:'Twin Plates',desc:'Two plates joined by a thin bridge.',word:'Twin'},
+ {id:'bowl',type:'rule',slot:'shape',shape:'bowl',excludes:['paint'],name:'Bowl',desc:'The plate dips in the middle. Everything slides to the bottom.',word:'Bowl'},
+ {id:'dome',type:'rule',slot:'shape',shape:'dome',excludes:['paint'],name:'Dome',desc:'The plate bulges up. Everything slides toward the edge.',word:'Dome'},
+ {id:'mega',type:'rule',slot:'scale',name:'Mega Stage',desc:'The plate grows 45% bigger. Prompts fire 30% more often.',word:'Mega'},
 ];
 const byId=Object.fromEntries(CARDS.map(c=>[c.id,c]));
 // Base payouts, tuned from bot-played sprints so one sprint of any scoring card is worth roughly the same.
@@ -345,6 +354,11 @@ const LIKES={grapple:TARGETS,bomb:TARGETS.concat('crates'),crates:['dash','slam'
 for(const c of CARDS){const r=REQ[c.id];c.likes=LIKES[c.id];
   if(r)c.req=()=>r==='prompt'?CARDS.some(x=>x.type==='prompt'&&L(x.id)):r==='goal'?CARDS.some(x=>x.goal&&L(x.id)):r.some(L)}
 const ORDER=['rule','prompt','mod'];
+const ENV_SLOTS=['shape','floor','tilt','edge','scale','sky'];
+const isEnv=c=>ENV_SLOTS.includes(c.slot);
+const slotHolder=c=>c.slot&&S.picks.map(id=>byId[id]).find(x=>x.slot===c.slot&&x.id!==c.id);
+// A card is excluded when it, or anything you own, lists the other in `excludes`.
+const excluded=c=>(c.excludes||[]).some(L)||S.picks.some(id=>(byId[id].excludes||[]).includes(c.id));
 const PICK_EVERY=20, BOSS_EVERY=200, BOSS_LEN=30, PICK_DRIFT=15, R0=11, G0=28, MAXH=5;
 const maxH=()=>L('glass')?3:MAXH;
 const VERBS=[{id:'dash',key:'Shift',label:'Dash'},{id:'grapple',key:'E',label:'Hook'},{id:'bomb',key:'F',label:'Bomb'},{id:'blink',key:'Q',label:'Blink'}];
@@ -462,9 +476,87 @@ const plateTex=(()=>{const c=document.createElement('canvas');c.width=c.height=5
   x.strokeStyle='#17123a';x.lineWidth=10;x.beginPath();x.arc(256,256,248,0,7);x.stroke();
   x.strokeStyle='#ff3d77';x.lineWidth=6;x.beginPath();x.arc(256,256,60,0,7);x.stroke();
   return new T.CanvasTexture(c)})();
-const plate=new T.Mesh(new T.CylinderGeometry(R0,R0*.86,1.6,64),[mat(0x17123a),new T.MeshLambertMaterial({map:plateTex}),mat(0x17123a)]);
-plate.position.y=-.8; plate.receiveShadow=true; world.add(plate);
-const plateTop=plate.material[1]; plateTop.emissive=new T.Color(0xff5a1e); plateTop.emissiveIntensity=0;
+const gridTex=(()=>{const c=document.createElement('canvas');c.width=c.height=256;const x=c.getContext('2d');
+  x.fillStyle='#f3ecdc';x.fillRect(0,0,256,256);x.strokeStyle='#d9cfb8';x.lineWidth=3;
+  for(let i=0;i<=256;i+=64){x.beginPath();x.moveTo(i,0);x.lineTo(i,256);x.moveTo(0,i);x.lineTo(256,i);x.stroke()}
+  const t=new T.CanvasTexture(c);t.wrapS=t.wrapT=T.RepeatWrapping;return t})();
+const plateSide=mat(0x17123a),plateTop=new T.MeshLambertMaterial({map:plateTex}),plateGrid=new T.MeshLambertMaterial({map:gridTex});
+const plateBowl=plateGrid.clone();plateBowl.side=T.DoubleSide;
+const PLATE_MATS=[plateTop,plateGrid,plateBowl];for(const m of PLATE_MATS){m.emissive=new T.Color(0xff5a1e);m.emissiveIntensity=0}
+const plateGlow=v=>{for(const m of PLATE_MATS)m.emissiveIntensity=v};
+const plate=new T.Group();world.add(plate);
+
+/* ---------- arena ----------
+   Every shape is a union of pieces in unit coordinates (radius 1), scaled by R at run time.
+   sdU(u,v) is the signed distance to the edge in those units: positive on the floor.
+   Every "is this on the plate?" question in the game goes through ARENA. */
+const SHAPES={
+  disc:{depth:1,ext:1,pieces:[{k:'disc',x:0,z:0,r:1}]},
+  square:{depth:.88,ext:1.25,pieces:[{k:'rect',x:0,z:0,hw:.88,hl:.88}]},
+  donut:{depth:.33,ext:1,pieces:[{k:'ann',x:0,z:0,r1:.34,r2:1}]},
+  islands:{depth:.36,ext:1.08,pieces:[{k:'disc',x:0,z:0,r:.36},{k:'disc',x:.55,z:.55,r:.3},{k:'disc',x:-.55,z:.55,r:.3},{k:'disc',x:.55,z:-.55,r:.3},{k:'disc',x:-.55,z:-.55,r:.3}]},
+  runway:{depth:.34,ext:1.45,pieces:[{k:'rect',x:0,z:0,hw:1.45,hl:.34}]},
+  twin:{depth:.5,ext:1.12,pieces:[{k:'disc',x:-.62,z:0,r:.5},{k:'disc',x:.62,z:0,r:.5},{k:'rect',x:0,z:0,hw:.2,hl:.09}]},
+  bowl:{depth:1,ext:1,pieces:[{k:'disc',x:0,z:0,r:1}],fy:r=>-2.6*(1-r*r)},
+  dome:{depth:1,ext:1,pieces:[{k:'disc',x:0,z:0,r:1}],fy:r=>2.2*(1-r*r)},
+};
+function pieceSd(q,u,v){const du=u-q.x,dv=v-q.z;
+  if(q.k==='disc')return q.r-Math.hypot(du,dv);
+  if(q.k==='rect')return Math.min(q.hw-Math.abs(du),q.hl-Math.abs(dv));
+  const d=Math.hypot(du,dv);return Math.min(q.r2-d,d-q.r1)}
+const ARENA={id:'disc',sh:SHAPES.disc,samples:[],
+  sdU(u,v){let s=-1e9;for(const q of this.sh.pieces)s=Math.max(s,pieceSd(q,u,v));return s},
+  sd(x,z){return this.sdU(x/R,z/R)*R},
+  on(x,z,m=0){return this.sd(x,z)>m},
+  get depth(){return this.sh.depth*R},
+  get ext(){return this.sh.ext},
+  // floor height (0 except on Bowl and Dome)
+  fy(x,z){const f=this.sh.fy;if(!f)return 0;return f(Math.min(1,Math.hypot(x,z)/R))},
+  // direction toward the middle of the floor (up the signed-distance gradient)
+  inward(x,z){const e=.25,gx=this.sd(x+e,z)-this.sd(x-e,z),gz=this.sd(x,z+e)-this.sd(x,z-e),l=Math.hypot(gx,gz);
+    if(l<1e-6){const d=Math.hypot(x,z)||1;return[-x/d,-z/d]}return[gx/l,gz/l]},
+  // closest safe floor point (respawns, Grapple's rescue, clamping things that drifted off)
+  nearest(x,z,m=.6){if(this.on(x,z,m))return[x,z];let best=null,bd=1e18;
+    for(const s of this.samples){const px=s[0]*R,pz=s[1]*R,d=(px-x)**2+(pz-z)**2;if(d<bd){bd=d;best=[px,pz]}}return best||[0,0]},
+  rand(maxF=.75,avoid=3){const ex=this.sh.ext,need=(1-maxF)*this.sh.depth;let last=null;
+    for(let i=0;i<40;i++){const u=rand(-ex,ex),v=rand(-ex,ex);if(this.sdU(u,v)<=need)continue;const x=u*R,z=v*R;last=[x,z];
+      if(Math.hypot(x-player.p.x,z-player.p.z)>=avoid)return last}
+    if(last)return last;const s=this.samples[Math.floor(Math.random()*this.samples.length)]||[0,0];return[s[0]*R,s[1]*R]},
+  // a point just past the outer edge in direction a (turrets stand there)
+  rim(a,out=1.7){const c=Math.cos(a),s=Math.sin(a);let r=this.sh.ext*R+1;while(r>0&&!this.on(c*r,s*r))r-=.25;return[c*(r+out),s*(r+out)]},
+  band(x,z){return this.sd(x,z)<Math.max(1.4,.2*this.depth)},
+  set(id){if(this.id===id&&this.samples.length)return;this.id=id;this.sh=SHAPES[id]||SHAPES.disc;
+    this.samples=[];const ex=this.sh.ext;for(let i=0;i<48;i++)for(let j=0;j<48;j++){const u=-ex+(i+.5)*2*ex/48,v=-ex+(j+.5)*2*ex/48;if(this.sdU(u,v)>.06*this.sh.depth)this.samples.push([u,v])}
+    buildPlate();buildBand()}
+};
+// The plate meshes are built at R0 and scaled with R each frame.
+function buildPlate(){
+  while(plate.children.length)plate.remove(plate.children[0]);
+  const fy=ARENA.sh.fy;
+  for(const q of ARENA.sh.pieces){let m;
+    if(fy){const pts=[];for(let i=0;i<=24;i++){const r=i/24;pts.push(new T.Vector2(Math.max(.001,r*R0),fy(r)))}pts.push(new T.Vector2(R0*.86,-1.6));
+      m=new T.Mesh(new T.LatheGeometry(pts,64),plateBowl)}
+    else if(q.k==='disc')m=new T.Mesh(new T.CylinderGeometry(q.r*R0,q.r*R0*.86,1.6,64),[plateSide,ARENA.id==='disc'?plateTop:plateGrid,plateSide]);
+    else if(q.k==='rect'){m=new T.Mesh(new T.BoxGeometry(q.hw*2*R0,1.6,q.hl*2*R0),[plateSide,plateSide,plateGrid,plateSide,plateSide,plateSide]);
+      const g=m.geometry.attributes.uv;for(let i=0;i<g.count;i++)g.setXY(i,g.getX(i)*q.hw*2*R0/6,g.getY(i)*q.hl*2*R0/6)}
+    else{const g=new T.Group(),top=new T.Mesh(new T.RingGeometry(q.r1*R0,q.r2*R0,64).rotateX(-Math.PI/2),plateGrid);top.position.y=.8;
+      const outer=new T.Mesh(new T.CylinderGeometry(q.r2*R0,q.r2*R0*.86,1.6,64,1,true),plateSide),inner=new T.Mesh(new T.CylinderGeometry(q.r1*R0,q.r1*R0*1.1,1.6,48,1,true),plateSide);
+      inner.material=plateSide.clone();inner.material.side=T.BackSide;g.add(top,outer,inner);m=g}
+    m.position.set(q.x*R0,fy?0:-.8,q.z*R0);m.traverse(o=>{if(o.isMesh)o.receiveShadow=true});plate.add(m)}
+}
+// The Daredevil band: an outline inset from each edge.
+function buildBand(){
+  while(edgeBand.children.length)edgeBand.remove(edgeBand.children[0]);
+  const bw=Math.max(1.4,.2*ARENA.sh.depth*R0),lm=new T.LineBasicMaterial({color:0xffd23f}),y=.05;
+  const loop=(pts)=>{const l=new T.LineLoop(new T.BufferGeometry().setFromPoints(pts.map(p=>new T.Vector3(p[0],y+ARENA.fy(p[0],p[1]),p[1]))),lm);edgeBand.add(l)};
+  const circ=(cx,cz,r)=>{const a=[];for(let i=0;i<64;i++){const t=i/64*6.283;a.push([cx+Math.cos(t)*r,cz+Math.sin(t)*r])}loop(a)};
+  for(const q of ARENA.sh.pieces){const cx=q.x*R0,cz=q.z*R0;
+    if(q.k==='disc')circ(cx,cz,q.r*R0-bw);
+    else if(q.k==='rect'){const w=q.hw*R0-bw,l=q.hl*R0-bw;if(w>0&&l>0)loop([[cx-w,cz-l],[cx+w,cz-l],[cx+w,cz+l],[cx-w,cz+l]])}
+    else{circ(cx,cz,q.r2*R0-bw);circ(cx,cz,q.r1*R0+bw)}}
+}
+const edgeBand=new T.Group();edgeBand.visible=false;world.add(edgeBand);
+ARENA.set('disc');
 
 const debris=new T.Group(); scene.add(debris);
 {const g=new T.BoxGeometry(1,1,1), ms=[mat(0x5d49ea),mat(0x3a28b8),mat(0x7a68ff)];
@@ -502,11 +594,10 @@ const hillRing=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0x3df0c2})); h
 const flag={mesh:new T.Group(),p:new V3(),on:false};
 {const d=new T.Mesh(GEO.disc,new T.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.55}));flag.mesh.add(d);
  const beam=new T.Mesh(GEO.cyl,new T.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.5}));beam.scale.set(.1,7,.1);beam.position.y=3.5;flag.mesh.add(beam);flag.mesh.visible=false;world.add(flag.mesh)}
-const edgeRing=new T.Mesh(new T.RingGeometry(.8,1,64).rotateX(-Math.PI/2),new T.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.22}));edgeRing.position.y=.02;edgeRing.visible=false;world.add(edgeRing);
 let mines=[],bombs=[];
 const PN=14,pcell=new Float32Array(PN*PN),pcan=document.createElement('canvas');pcan.width=pcan.height=PN*16;
 const pctx=pcan.getContext('2d'),ptex=new T.CanvasTexture(pcan);let pdirty=false;
-const paintMesh=new T.Mesh(GEO.disc,new T.MeshBasicMaterial({map:ptex,transparent:true,opacity:.75,depthWrite:false}));paintMesh.scale.setScalar(R0);paintMesh.position.y=.025;paintMesh.visible=false;world.add(paintMesh);
+const paintMesh=new T.Mesh(new T.PlaneGeometry(2,2).rotateX(-Math.PI/2),new T.MeshBasicMaterial({map:ptex,transparent:true,opacity:.75,depthWrite:false}));paintMesh.scale.setScalar(R0);paintMesh.position.y=.025;paintMesh.visible=false;world.add(paintMesh);
 const hookLine=new T.Line(new T.BufferGeometry().setFromPoints([new V3(),new V3(0,1,0)]),new T.LineBasicMaterial({color:0xfff8e8}));hookLine.visible=false;hookLine.frustumCulled=false;world.add(hookLine);
 let hookT=0;const hookTo=new V3();
 const cds={dash:0,grapple:0,bomb:0,blink:0},cdmax={},tper={},trk={},abl={};
@@ -520,8 +611,7 @@ function clearEntities(){
   meteors.forEach(m=>{world.remove(m.ring);world.remove(m.rock)}); meteors.length=0;
   while(laserPivot.children.length)laserPivot.remove(laserPivot.children[0]);
 }
-function spot(maxF=.75,avoid=3){for(let i=0;i<12;i++){const a=rand(0,6.283),d=Math.sqrt(Math.random())*R*maxF,x=Math.cos(a)*d,z=Math.sin(a)*d;
-  if(Math.hypot(x-player.p.x,z-player.p.z)>=avoid||i===11)return [x,z]}}
+function spot(maxF=.75,avoid=3){return ARENA.rand(maxF,avoid)}
 
 function spawnChaser(){const sz=mv('chasers','size'),g=new T.Group(),b=new T.Mesh(GEO.box,gm('chasers',MAT.chaser));b.scale.setScalar(1.05);g.add(b);
   for(const s of[-1,1]){const e=new T.Mesh(GEO.box,MAT.eye);e.scale.set(.22,.3,.1);e.position.set(.24*s,.15,.53);g.add(e)}
@@ -541,10 +631,10 @@ function spawnCrate(){const m=new T.Mesh(GEO.box,MAT.crate);m.scale.setScalar(.9
 function spawnBoss(){const g=new T.Group(),b=new T.Mesh(GEO.box,MAT.iron);g.add(b);
   for(const s of[-1,1]){const e=new T.Mesh(GEO.box,MAT.shot);e.scale.set(.2,.12,.1);e.position.set(.22*s,.18,.51);g.add(e)}
   const crown=new T.Mesh(GEO.cone,MAT.coin);crown.scale.set(.8,.4,.8);crown.position.y=.7;g.add(crown);g.scale.setScalar(3);
-  const c=mkBody('boss',g,1.7,7);c.p.set(0,12,-R*.5);return c}
+  const c=mkBody('boss',g,1.7,7);const[bx,bz]=spot(.6,5);c.p.set(bx,12,bz);return c}
 function spawnStampede(){
-  const n=Math.round(4*mv('stampede','count')),sz=mv('stampede','size'),sp=11*mv('stampede','speed'),a=rand(0,6.283),dx=Math.cos(a),dz=Math.sin(a),gap=Math.min(2.5*sz,(R*1.5)/n);
-  for(let i=0;i<n;i++){const o=(i-(n-1)/2)*gap,al=-Math.sqrt(Math.max(0,R*R*.8-o*o));
+  const n=Math.round(4*mv('stampede','count')),sz=mv('stampede','size'),sp=11*mv('stampede','speed'),a=rand(0,6.283),dx=Math.cos(a),dz=Math.sin(a),gap=Math.min(2.5*sz,(R*ARENA.ext*1.5)/n);
+  for(let i=0;i<n;i++){const o=(i-(n-1)/2)*gap,al=-Math.sqrt(Math.max(0,(R*ARENA.ext)**2*.8-o*o));
     const m=new T.Mesh(GEO.rock,gm('stampede',MAT.boulder));m.scale.setScalar(.85*sz);const b=mkBody('boulder',m,.85*sz,4*sz*sz);
     b.p.set(dx*al-dz*o,b.r+2.5+i*.3,dz*al+dx*o);b.v.set(dx*sp,0,dz*sp);b.dx=dx*sp;b.dz=dz*sp}
   ev.stampT=S.t;banner('Stampede!');nz(1.1,.3,'lowpass',260,90);snd(55,.9,'sawtooth',.06,20);
@@ -558,13 +648,14 @@ function clearStatics(){
 // so a card taken mid-run changes the game in place.
 function applyStatics(){
   clearStatics();
+  {const sc=S.picks.map(id=>byId[id]).find(c=>c.slot==='shape');ARENA.set(sc?sc.shape:'disc')}
   const nt=L('turrets')?Math.round(2*mv('turrets','count')):0, off=rand(0,6.28);
   for(let i=0;i<nt;i++){const g=new T.Group(),base=new T.Mesh(GEO.cyl,MAT.turret);base.scale.set(.5,1.6,.5);g.add(base);
     const head=new T.Mesh(GEO.cone,MAT.shot);head.position.y=1.1;g.add(head);world.add(shadowed(g));
     turrets.push({mesh:g,a:off+i*6.283/nt})}
   const nb=L('bumpers')?Math.round(4*mv('bumpers','count')):0, bo=rand(0,6.28);
-  for(let i=0;i<nb;i++){const m=new T.Mesh(GEO.cyl,MAT.bumper);m.scale.set(.75,1.3,.75);const a=bo+i*6.283/nb,d=R0*(i%2?.34:.6);
-    m.position.set(Math.cos(a)*d,.65,Math.sin(a)*d);world.add(shadowed(m));bumpers.push({mesh:m,p:m.position,hot:0})}
+  for(let i=0;i<nb;i++){const m=new T.Mesh(GEO.cyl,MAT.bumper);m.scale.set(.75,1.3,.75);const a=bo+i*6.283/nb,d=R*ARENA.ext*(i%2?.34:.6);const[bx,bz]=ARENA.nearest(Math.cos(a)*d,Math.sin(a)*d,1.2);
+    m.position.set(bx,.65+ARENA.fy(bx,bz),bz);world.add(shadowed(m));bumpers.push({mesh:m,p:m.position,hot:0})}
   const arms=L('laser')?Math.round(mv('laser','count')):0;
   for(let i=0;i<arms;i++){const m=new T.Mesh(GEO.box,gm('laser',MAT.laser));m.userData.i=i;m.userData.d=0;laserPivot.add(m)}
   laserA=Math.atan2(-player.p.z,-player.p.x)||0;
@@ -575,7 +666,7 @@ function applyStatics(){
   hill.r=2.6*mv('hill','size');hill.mesh.scale.setScalar(hill.r);if(!hill.mesh.visible&&L('hill')){hill.p.set(0,0,0);hill.t=0}hill.mesh.visible=!!L('hill');
   if(!paintMesh.visible&&L('paint')){pcell.fill(0);pdirty=true}paintMesh.visible=!!L('paint');
   const big=L('big');player.r=big?1:.6;player.m=big?3:1;player.mesh.scale.setScalar(player.r);
-  if(!flag.mesh.visible&&L('courier'))flag.on=false;flag.mesh.visible=!!L('courier');edgeRing.visible=!!L('greed');
+  if(!flag.mesh.visible&&L('courier'))flag.on=false;flag.mesh.visible=!!L('courier');edgeBand.visible=!!L('greed');
   // prompts you just gained start on their first-fire timer; ones you already had keep counting
   for(const id in FIRE)if(L(id)&&timers[id]===undefined){timers[id]=tper[id]=FIRST[id]}
   buildTracker();
@@ -587,7 +678,7 @@ function resetRunState(){
   Object.assign(timers,{dummy:0,orb:0,blast:0,airAcc:0,hillAcc:0,runner:0,med:10,ball:1,crate:0,pick:PICK_EVERY});
   fireQ.length=0;for(const k in trigCount){delete trigCount[k];delete trigLast[k]}
   pcell.fill(0);pdirty=true;paintMesh.visible=false;hill.mesh.visible=false;flag.mesh.visible=false;flag.on=false;
-  for(const k in cds)cds[k]=0;hookT=0;hookLine.visible=false;player.airJ=0;canvas.style.filter='';plateTop.emissiveIntensity=0;
+  for(const k in cds)cds[k]=0;hookT=0;hookLine.visible=false;player.airJ=0;canvas.style.filter='';plateGlow(0);
   Object.assign(ev,{flipPending:false,flipT:0,stampT:-1,shrinkCycle:0,shrinkStart:0,gustT:0,mirrorT:0,lavaT:0,pinT:-9,pinStreak:0,bossT:3,bossI:0});
   S.lastFall=-1;S.lastScore=-9;S.streak=0;
   removePickup();applyStatics();
@@ -616,10 +707,10 @@ function updatePickup(dt){
   pk.t+=dt;
   // an ignored card comes looking for you
   if(pk.t>PICK_DRIFT){const dx=player.p.x-pk.p.x,dz=player.p.z-pk.p.z,d=Math.hypot(dx,dz)||1,sp=Math.min(6,1.5+(pk.t-PICK_DRIFT)*.3);pk.p.x+=dx/d*sp*dt;pk.p.z+=dz/d*sp*dt}
-  const off=Math.hypot(pk.p.x,pk.p.z);if(off>R*.9){pk.p.x*=R*.9/off;pk.p.z*=R*.9/off}
-  if(Math.hypot(player.p.x-pk.p.x,player.p.z-pk.p.z)<player.r+.8&&player.p.y<3.5&&player.p.y>-.5){removePickup();burst(player.p,PK_COL[pk.kind],12);hitStop(.06);showPick()}
+  if(!ARENA.on(pk.p.x,pk.p.z,1)){const[nx2,nz2]=ARENA.nearest(pk.p.x,pk.p.z,1);pk.p.x=nx2;pk.p.z=nz2}
+  if(Math.hypot(player.p.x-pk.p.x,player.p.z-pk.p.z)<player.r+.8&&player.p.y-ARENA.fy(pk.p.x,pk.p.z)<3.5&&player.p.y>-4){removePickup();burst(player.p,PK_COL[pk.kind],12);hitStop(.06);showPick()}
 }
-function pickupVisuals(rdt){if(!pk.mesh.visible)return;pk.mesh.position.set(pk.p.x,.15*Math.sin(performance.now()/300),pk.p.z);pk.card.rotation.y+=rdt*2;pk.face.rotation.y=pk.card.rotation.y;
+function pickupVisuals(rdt){if(!pk.mesh.visible)return;pk.mesh.position.set(pk.p.x,ARENA.fy(pk.p.x,pk.p.z)+.15*Math.sin(performance.now()/300),pk.p.z);pk.card.rotation.y+=rdt*2;pk.face.rotation.y=pk.card.rotation.y;
   pk.ring.scale.setScalar(1.6+.2*Math.sin(performance.now()/200));pk.beam.material.opacity=pk.t>PICK_DRIFT?.6:.35}
 
 /* ---------- fx ---------- */
@@ -691,7 +782,7 @@ function music(){
 
 /* ---------- scoring: rules earn income, prompts pay bounties, modifiers multiply their host ---------- */
 function add(n,id,p,k=1){let v=n*payMul(id)*k;const bounty=byId[id].type==='prompt';
-  if(!bounty&&L('greed')&&Math.hypot(player.p.x,player.p.z)>R*.8)v*=2;
+  if(!bounty&&L('greed')&&ARENA.band(player.p.x,player.p.z))v*=2;
   if(!bounty&&L('momentum'))v*=1+Math.min(1,Math.hypot(player.v.x,player.v.z)/12);
   if(bounty&&L('hunter')&&++S.hunt>=6){S.hunt=0;if(S.hearts<maxH()){S.hearts++;snd(520,.25,'triangle',.07,520);burst(player.p,0xff3d77,8)}}
   if(L('combo')){S.streak=S.t-S.lastScore<2?Math.min(10,S.streak+1):0;S.lastScore=S.t;v*=1+.1*S.streak}
@@ -707,16 +798,16 @@ function hurt(dx,dz){if(player.inv>0||S.phase!=='play')return;S.hearts--;player.
   const d=Math.hypot(dx,dz)||1;player.v.x+=dx/d*7;player.v.z+=dz/d*7;player.v.y+=4;burst(player.p,0xff3d77,10);
   if(S.hearts<=0)gameOver()}
 function fell(b){
-  const d=Math.hypot(b.p.x,b.p.z)||1,rx=b.p.x/d*R,rz=b.p.z/d*R;tmp.set(rx,.6,rz);
+  const[rx,rz]=ARENA.nearest(b.p.x,b.p.z,0);tmp.set(rx,.6,rz);
   if(b===player){S.hearts--;shake=.7;hitStop(.06,.3);flash();emit('hit');snd(220,.4,'sawtooth',.08,-180);S.lastFall=S.t;ev.flipPending=false;
     if(S.hearts<=0){gameOver();return}
-    player.p.set(0,8,0);player.v.set(0,0,0);player.inv=2.2;player.slam=false;banner('Fell off');return}
+    {const[sx,sz]=ARENA.nearest(0,0,2);player.p.set(sx,8+ARENA.fy(sx,sz),sz)}player.v.set(0,0,0);player.inv=2.2;player.slam=false;banner('Fell off');return}
   b.dead=true;world.remove(b.mesh);
   if(b.kind==='boss'){S.bossDown=true;bossPay(300,tmp.clone());banner('Boss down!');hitStop(.15,.7);return}
   if(b.kind==='boulder'||b.kind==='ball'||b.kind==='crate')return;
   emit('ko');burst(tmp,0xffffff,8);hitStop(.035);
   if(b.kind==='runner')return;
-  if(b.kind==='chaser'){add(PAY.chasers,'chasers',tmp.clone(),L('matador')&&Math.hypot(player.p.x,player.p.z)>R*.8?3:1);snd(520,.12,'square',.05,300)}
+  if(b.kind==='chaser'){add(PAY.chasers,'chasers',tmp.clone(),L('matador')&&ARENA.band(player.p.x,player.p.z)?3:1);snd(520,.12,'square',.05,300)}
   if(b.kind==='dummy'){let k=1;if(L('strike')){k=ev.pinStreak=S.t-ev.pinT<2?Math.min(4,ev.pinStreak+1):1;ev.pinT=S.t;if(k>1)banner(k>2?'Strike!':'Spare!')}
     add(PAY.sumo,'sumo',tmp.clone(),k);snd(660,.12,'triangle',.07,300)}
   if(L('boom'))shockwave(rx*.9,rz*.9,4*mv('boom','size'),10*mv('boom','force'),false,stacks('boom','force')>0);
@@ -756,7 +847,7 @@ const PERIOD={chasers:()=>6.5,meteors:()=>2.4/mv('meteors','count'),flip:()=>7/m
 const FIRST={chasers:1.5,meteors:1.5,flip:5,gold:2.5,stampede:4,gust:5,mirror:6,lava:5,mines:3,turrets:1.5};
 const FIRE={
  chasers(){const n=Math.round(2*mv('chasers','count')),cap=10*mv('chasers','count');for(let i=0;i<n&&bodies.filter(b=>b.kind==='chaser').length<cap;i++)spawnChaser();snd(98,.14,'square',.07);snd(82,.22,'square',.07,0,.16)},
- meteors(){let x=player.p.x+rand(-3.5,3.5),z=player.p.z+rand(-3.5,3.5);const d=Math.hypot(x,z);if(d>R*.95){x*=R*.95/d;z*=R*.95/d}
+ meteors(){let x=player.p.x+rand(-3.5,3.5),z=player.p.z+rand(-3.5,3.5);if(!ARENA.on(x,z,.5))[x,z]=ARENA.nearest(x,z,.5);
    const rad=2.6*mv('meteors','size'),ring=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0xff3d77,side:T.DoubleSide}));ring.position.set(x,.06,z);world.add(ring);
    const rock=new T.Mesh(GEO.rock,gm('meteors',MAT.rock));rock.scale.setScalar(rad*.38);rock.castShadow=true;world.add(rock);meteors.push({ring,rock,x,z,t:0,rad});snd(1500,1.25/mv('meteors','speed'),'sine',.025,-1250)},
  flip(){banner('Hic!');snd(220,.16,'sine',.12,480);snd(520,.14,'sine',.1,-280,.17);shake=.5;const f=mv('flip','force');
@@ -777,11 +868,11 @@ const FIRE={
 
 /* ---------- active verbs ---------- */
 function doGrapple(){const f=mv('grapple','force');cdmax.grapple=cds.grapple=2.5/mv('grapple','speed');snd(500,.15,'square',.05,700);
-  const pd=Math.hypot(player.p.x,player.p.z)||1,off=pd>R||player.p.y<0;let tgt=null,bd=13;
+  const off=!ARENA.on(player.p.x,player.p.z)||player.p.y<ARENA.fy(player.p.x,player.p.z)-.2;let tgt=null,bd=13;
   if(!off)for(const b of bodies){if(b===player||b.kind==='boulder'||b.dead)continue;const d=b.p.distanceTo(player.p);if(d<bd){bd=d;tgt=b}}
   if(tgt){const dx=tgt.p.x-player.p.x,dz=tgt.p.z-player.p.z,d=Math.hypot(dx,dz)||1,nx=dx/d,nz=dz/d,k=12*f,tk=k/Math.sqrt(tgt.m);
     player.v.x+=nx*k;player.v.z+=nz*k;player.v.y+=3;tgt.v.x-=nx*tk;tgt.v.z-=nz*tk;tgt.v.y+=3;hookTo.copy(tgt.p)}
-  else if(off){player.v.x=-player.p.x/pd*(7+pd-R);player.v.z=-player.p.z/pd*(7+pd-R);player.v.y=Math.min(24,Math.sqrt(2*G0*(Math.max(0,-player.p.y)+2.5)));player.slam=false;hookTo.set(0,0,0)}
+  else if(off){const[fx,fz]=ARENA.nearest(player.p.x,player.p.z,1.5),dx=fx-player.p.x,dz=fz-player.p.z,dd=Math.hypot(dx,dz)||1;player.v.x=dx/dd*(7+dd*.9);player.v.z=dz/dd*(7+dd*.9);player.v.y=Math.min(24,Math.sqrt(2*G0*(Math.max(0,ARENA.fy(fx,fz)-player.p.y)+2.5)));player.slam=false;hookTo.set(fx,0,fz)}
   else{player.v.x+=player.face.x*10*f;player.v.z+=player.face.z*10*f;hookTo.copy(player.p).addScaledVector(player.face,6)}
   hookT=.22}
 function doBomb(){cdmax.bomb=cds.bomb=3/mv('bomb','speed');snd(260,.2,'square',.05,300);const n=Math.round(mv('bomb','count'));
@@ -789,7 +880,7 @@ function doBomb(){cdmax.bomb=cds.bomb=3/mv('bomb','speed');snd(260,.2,'square',.
     const a=(i-(n-1)/2)*.6,c=Math.cos(a),s=Math.sin(a),fx=player.face.x*c-player.face.z*s,fz=player.face.x*s+player.face.z*c;
     bombs.push({mesh:m,p:m.position,v:new V3(fx*9+player.v.x*.5,7.5,fz*9+player.v.z*.5),t:0})}}
 function doBlink(){cdmax.blink=cds.blink=3/mv('blink','speed');const d=5*mv('blink','size');ringFx(player.p.x,player.p.z,2,0xd0adff);ghost(player.p,player.r,0xd0adff);
-  let x=player.p.x+player.face.x*d,z=player.p.z+player.face.z*d;const on=Math.hypot(player.p.x,player.p.z)<R,l=Math.hypot(x,z);if(on&&l>R*.96){x*=R*.96/l;z*=R*.96/l}
+  let x=player.p.x+player.face.x*d,z=player.p.z+player.face.z*d;const on=ARENA.on(player.p.x,player.p.z);for(let k=0;on&&k<12&&!ARENA.on(x,z,.4);k++){x=(x+player.p.x)/2;z=(z+player.p.z)/2}
   player.p.x=x;player.p.z=z;player.inv=Math.max(player.inv,.35);ringFx(x,z,2,0xd0adff);snd(900,.12,'sine',.07,900)}
 
 /* ---------- simulation ---------- */
@@ -801,10 +892,10 @@ function update(dt){
   const ramp=(1+Math.max(0,S.t-120)/400)*(S.boss?1.6:1);
   const g=G0*(L('moon')?.42:1), ice=L('ice'), fr=ice?.45:5, bouncy=L('bouncy');
   // plate radius
-  let Rb=R0*(L('tiny')?.8:1);
+  let Rb=R0*(L('tiny')?.8:1)*(L('mega')?1.45:1);
   if(L('shrink')){const ph=S.t*.8*mv('shrink','speed');Rb*=1-.26*(.5-.5*Math.cos(ph));
     const cyc=Math.floor(ph/6.283);if(cyc>ev.shrinkCycle){ev.shrinkCycle=cyc;snd(260,.45,'sine',.06,-130);if(S.lastFall<ev.shrinkStart)add(PAY.shrink,'shrink',player.p.clone());ev.shrinkStart=S.t}}
-  R=Rb; plate.scale.set(R/R0,1,R/R0); edgeRing.scale.setScalar(R);
+  R=Rb; plate.scale.set(R/R0,1,R/R0); edgeBand.scale.set(R/R0,1,R/R0);
   // tilt
   const tmag=L('tilt')?.15*Math.min(1,S.t/3):0, tphi=S.t*.35;
   const tx=Math.cos(tphi)*tmag*G0*2.6, tz=Math.sin(tphi)*tmag*G0*2.6;
@@ -844,23 +935,23 @@ function update(dt){
   if(L('juggle')){timers.ball-=dt;if(timers.ball<=0&&bodies.filter(b=>b.kind==='ball').length<Math.round(mv('juggle','count'))){spawnBall();timers.ball=1.5}}
   if(L('crates')){timers.crate-=dt;if(timers.crate<=0&&bodies.filter(b=>b.kind==='crate').length<Math.round(7*mv('crates','count'))){spawnCrate();timers.crate=.9/mv('crates','count')}}
   while(fireQ.length){const id=fireQ.shift();if(L(id))fireP(id)}
-  for(const id in FIRE){if(!L(id)||S.trig[id])continue;timers[id]-=dt;if(timers[id]<=0){tper[id]=timers[id]=PERIOD[id]()/Math.sqrt(ramp);fireP(id)}}
+  for(const id in FIRE){if(!L(id)||S.trig[id])continue;timers[id]-=dt;if(timers[id]<=0){tper[id]=timers[id]=PERIOD[id]()/Math.sqrt(ramp)/(L('mega')?1.3:1);fireP(id)}}
   // the boss casts your own prompts at you, one after another
   if(S.boss&&!S.bossDown){ev.bossT-=dt;if(ev.bossT<=0){ev.bossT=2.6;const ids=Object.keys(FIRE).filter(L);if(ids.length)fireP(ids[ev.bossI++%ids.length]);
     const bs=bodies.find(b=>b.kind==='boss');if(bs&&bs.g)bs.v.y=6}}
   if(ev.stampT>=0&&S.t-ev.stampT>3.2){if(S.lastFall<ev.stampT)add(PAY.stampede,'stampede',player.p.clone());ev.stampT=-1}
   if(ev.gustT>0){ev.gustT-=dt;const f=20*mv('gust','force')*dt;for(const b of bodies){if(b.kind==='boulder')continue;b.v.x+=ev.gx*f;b.v.z+=ev.gz*f}
-    if(Math.random()<.5){tmp.set(rand(-R,R),rand(.3,2),rand(-R,R));const n0=parts.length;burst(tmp,0xffffff,1);if(parts.length>n0)parts[parts.length-1].v.set(ev.gx*14,1,ev.gz*14)}
+    if(Math.random()<.5){tmp.set(rand(-R,R)*ARENA.ext,rand(.3,2),rand(-R,R)*ARENA.ext);const n0=parts.length;burst(tmp,0xffffff,1);if(parts.length>n0)parts[parts.length-1].v.set(ev.gx*14,1,ev.gz*14)}
     if(ev.gustT<=0&&S.lastFall<ev.gustStart)add(PAY.gust,'gust',player.p.clone())}
   if(ev.mirrorT>0){ev.mirrorT-=dt;if(ev.mirrorT<=0){canvas.style.filter='';if(S.lastFall<ev.mirrorStart)add(PAY.mirror,'mirror',player.p.clone())}}
-  if(ev.lavaT>0){ev.lavaT-=dt;plateTop.emissiveIntensity=1-Math.max(0,ev.lavaT)/1.4;
-    if(ev.lavaT<=0){plateTop.emissiveIntensity=0;shake=.4;snd(90,.25,'square',.1,-40);nz(.3,.22,'highpass',2500);
+  if(ev.lavaT>0){ev.lavaT-=dt;plateGlow(1-Math.max(0,ev.lavaT)/1.4);
+    if(ev.lavaT<=0){plateGlow(0);shake=.4;snd(90,.25,'square',.1,-40);nz(.3,.22,'highpass',2500);
       const safe=!(player.g||player.p.y<player.r+.25);for(const b of bodies)if(b!==player&&b.g)b.v.y=7;
       if(safe){const rk=L('rocket');add(PAY.lava,'lava',player.p.clone(),rk?3:1);if(rk){player.v.y=17;snd(300,.5,'sawtooth',.06,1200)}}else if(player.inv<=0){hurt(0,0);player.v.y=8}}}
   const mrad=3*mv('mines','size');
   for(const mn of mines){mn.t+=dt;let hit=null;if(mn.t>.7)for(const b of bodies){if(b.p.y-b.r<.8&&Math.hypot(b.p.x-mn.p.x,b.p.z-mn.p.z)<b.r+.45){hit=b;break}}
     if(hit){mn.dead=true;burst(mn.p,0xff9140,10);snd(70,.3,'sawtooth',.1,-20);nz(.35,.28,'lowpass',800,100);if(hit===player)hurt(player.p.x-mn.p.x,player.p.z-mn.p.z);shockwave(mn.p.x,mn.p.z,mrad,13,false)}
-    else if(mn.t>6||Math.hypot(mn.p.x,mn.p.z)>R){mn.dead=true;if(mn.t>6)add(PAY.mines,'mines',mn.p.clone())}
+    else if(mn.t>6||!ARENA.on(mn.p.x,mn.p.z)){mn.dead=true;if(mn.t>6)add(PAY.mines,'mines',mn.p.clone())}
     if(mn.dead)world.remove(mn.mesh)}
   mines=mines.filter(m=>!m.dead);
 
@@ -870,11 +961,11 @@ function update(dt){
     if(b.kind==='chaser'){const dx=player.p.x-b.p.x,dz=player.p.z-b.p.z,d=Math.hypot(dx,dz)||1,a=((b.g?(ice?9:24):6)+3*(ramp-1))*cs;
       b.v.x+=dx/d*a*dt;b.v.z+=dz/d*a*dt;b.mesh.rotation.y=Math.atan2(dx,dz);b.mesh.scale.y=b.sz*(1+.12*Math.sin((S.t+b.t)*11))}
     else if(b.kind==='dummy'){b.t+=dt;if(b.t>2){b.t=0;b.dir=rand(0,6.28)}
-      const d=Math.hypot(b.p.x,b.p.z);let ax=Math.cos(b.dir),az=Math.sin(b.dir);if(d>R*.7){ax=-b.p.x/d;az=-b.p.z/d}
+      let ax=Math.cos(b.dir),az=Math.sin(b.dir);if(ARENA.sd(b.p.x,b.p.z)<.3*ARENA.depth)[ax,az]=ARENA.inward(b.p.x,b.p.z);
       if(b.g){b.v.x+=ax*(ice?4:10)*dt;b.v.z+=az*(ice?4:10)*dt}b.mesh.rotation.z=Math.sin(S.t*7+b.dir)*.18}
     else if(b.kind==='boss'){const dx=player.p.x-b.p.x,dz=player.p.z-b.p.z,d=Math.hypot(dx,dz)||1,a=b.g?(ice?5:11):2;b.v.x+=dx/d*a*dt;b.v.z+=dz/d*a*dt;b.mesh.rotation.y=Math.atan2(dx,dz)}
-    else if(b.kind==='runner'){const dx=b.p.x-player.p.x,dz=b.p.z-player.p.z,d=Math.hypot(dx,dz)||1,cd=Math.hypot(b.p.x,b.p.z)||1,e=clamp((cd/R-.5)/.35,0,1);
-      let ax=dx/d-b.p.x/cd*e*2-b.p.z/cd*e,az=dz/d-b.p.z/cd*e*2+b.p.x/cd*e;const al=Math.hypot(ax,az)||1,k=(ice?10:28)*dt/al;
+    else if(b.kind==='runner'){const dx=b.p.x-player.p.x,dz=b.p.z-player.p.z,d=Math.hypot(dx,dz)||1,e=clamp((.5-ARENA.sd(b.p.x,b.p.z)/ARENA.depth)/.35,0,1),[ix,iz]=ARENA.inward(b.p.x,b.p.z);
+      let ax=dx/d+ix*e*2+iz*e,az=dz/d+iz*e*2-ix*e;const al=Math.hypot(ax,az)||1,k=(ice?10:28)*dt/al;
       if(b.g){b.v.x+=ax*k;b.v.z+=az*k}b.mesh.rotation.z=Math.sin(S.t*14)*.2}
     else if(b.kind==='boulder'){b.v.x+=(b.dx-b.v.x)*Math.min(1,3*dt);b.v.z+=(b.dz-b.v.z)*Math.min(1,3*dt);b.mesh.rotation.x+=dt*5;b.mesh.rotation.z+=dt*3}
   }
@@ -883,9 +974,10 @@ function update(dt){
   for(const b of bodies){
     b.cd-=dt; b.v.y-=g*(b.gs||1)*dt; b.v.x+=tx*dt; b.v.z+=tz*dt;
     b.p.x+=b.v.x*dt;b.p.y+=b.v.y*dt;b.p.z+=b.v.z*dt;
-    const on=Math.hypot(b.p.x,b.p.z)<R+b.r*.35;
-    if(on&&b.p.y<b.r&&b.p.y>-.5&&b.v.y<=0){
-      const impact=-b.v.y; b.p.y=b.r;
+    const on=ARENA.on(b.p.x,b.p.z,-b.r*.35),fl=ARENA.fy(b.p.x,b.p.z);
+    if(on&&b.p.y<fl+b.r&&b.p.y>fl-.5&&b.v.y<=0){
+      const impact=-b.v.y; b.p.y=fl+b.r;
+      if(ARENA.sh.fy){const e=.3,sx=(ARENA.fy(b.p.x+e,b.p.z)-ARENA.fy(b.p.x-e,b.p.z))/(2*e),sz=(ARENA.fy(b.p.x,b.p.z+e)-ARENA.fy(b.p.x,b.p.z-e))/(2*e);b.v.x-=sx*g*.55*dt;b.v.z-=sz*g*.55*dt}
       if(b===player&&player.slam){player.slam=false;shockwave(b.p.x,b.p.z,5*mv('slam','size'),15*mv('slam','force'),true,stacks('slam','force')>0);snd(70,.3,'sine',.14,-30);b.v.y=0;player.q=.5;hitStop(.05);
         if(L('surfer')){const sr=5*mv('slam','size');for(const o of bodies)if(o.kind==='boulder'&&!o.dead&&Math.hypot(o.p.x-b.p.x,o.p.z-b.p.z)<sr){o.dead=true;world.remove(o.mesh);burst(o.p,0x8a7a6a,10);add(PAY.stampede*.5,'stampede',o.p.clone())}}}
       else if(bouncy&&impact>3){b.v.y=impact*.72}else b.v.y=0;
@@ -922,25 +1014,25 @@ function update(dt){
 
   // --- bumpers
   const bk=8*mv('bumpers','force');
-  for(const bm of bumpers){bm.hot-=dt;const active=Math.hypot(bm.p.x,bm.p.z)<R-.4;bm.mesh.visible=active;bm.mesh.material=bm.hot>0?MAT.bumperHot:MAT.bumper;if(!active)continue;
+  for(const bm of bumpers){bm.hot-=dt;const active=ARENA.on(bm.p.x,bm.p.z,.4);bm.mesh.visible=active;bm.mesh.material=bm.hot>0?MAT.bumperHot:MAT.bumper;if(!active)continue;
     for(const b of bodies){if(b.p.y>1.5+b.r)continue;const dx=b.p.x-bm.p.x,dz=b.p.z-bm.p.z,d=Math.hypot(dx,dz),min=.75+b.r;if(d>=min||d<1e-4)continue;
       const nx=dx/d,nz=dz/d;b.p.x=bm.p.x+nx*min;b.p.z=bm.p.z+nz*min;const vn=b.v.x*nx+b.v.z*nz;if(vn<0){b.v.x-=2*vn*nx;b.v.z-=2*vn*nz}
       b.v.x+=nx*bk;b.v.z+=nz*bk;b.v.y+=2;bm.hot=.12;if(b===player){snd(880,.07,'square',.05);shake=Math.max(shake,.2)}}}
 
   // --- sweeper: knocks what it touches, pays when you jump it
   if(L('laser')){const arms=laserPivot.children.filter(m=>m.userData.i!==undefined),n=arms.length,w=1.05*mv('laser','speed')*Math.min(ramp,1.8)*Math.min(1,S.t/2.5);
-    laserA+=w*dt;laserPivot.rotation.y=-laserA;const pa=Math.atan2(player.p.z,player.p.x),pr=Math.hypot(player.p.x,player.p.z);
-    for(const m of arms){const off=m.userData.i*6.283/n;m.scale.set(R,.3,.3);m.position.set(Math.cos(off)*R/2,.45,Math.sin(off)*R/2);m.rotation.y=-off;
+    laserA+=w*dt;laserPivot.rotation.y=-laserA;const pa=Math.atan2(player.p.z,player.p.x),pr=Math.hypot(player.p.x,player.p.z),LR=R*ARENA.ext;
+    for(const m of arms){const off=m.userData.i*6.283/n;m.scale.set(LR,.3,.3);m.position.set(Math.cos(off)*LR/2,.45,Math.sin(off)*LR/2);m.rotation.y=-off;
       const a=laserA+off,cx=Math.cos(a),cz=Math.sin(a);
-      for(const b of bodies){if(b.cd>0||b.p.y-b.r>.62)continue;const along=clamp(b.p.x*cx+b.p.z*cz,0,R),px=b.p.x-cx*along,pz=b.p.z-cz*along;
+      for(const b of bodies){if(b.cd>0||b.p.y-b.r>.62)continue;const along=clamp(b.p.x*cx+b.p.z*cz,0,LR),px=b.p.x-cx*along,pz=b.p.z-cz*along;
         if(Math.hypot(px,pz)>b.r+.18)continue;const k=(9+along*w*.8)/Math.sqrt(b.m);b.v.x+=-cz*k+cx*3;b.v.z+=cx*k+cz*3;b.v.y+=5.5;b.cd=.45;
         if(b===player){snd(110,.2,'sawtooth',.08,200);shake=.5}}
       const diff=wrap(pa-a),prev=m.userData.d;m.userData.d=diff;if(prev>0&&diff<=0&&prev<1)nz(.18,.05,'bandpass',900,300);
-      if(prev>0&&diff<=0&&prev<1&&pr>1&&pr<R&&player.p.y-player.r>.62&&player.cd<=0)add(PAY.laser,'laser',player.p.clone())}}
+      if(prev>0&&diff<=0&&prev<1&&pr>1&&ARENA.on(player.p.x,player.p.z)&&player.p.y-player.r>.62&&player.cd<=0)add(PAY.laser,'laser',player.p.clone())}}
 
   // --- turrets & shots
   const shotS=.3*mv('turrets','size');
-  turrets.forEach(t=>{const tr=R+1.7;t.mesh.position.set(Math.cos(t.a)*tr,-.2,Math.sin(t.a)*tr)});
+  turrets.forEach(t=>{const[x,z]=ARENA.rim(t.a);t.mesh.position.set(x,-.2,z)});
   for(const s of shots){s.t+=dt;s.p.x+=s.vx*dt;s.p.z+=s.vz*dt;
     if(s.p.distanceTo(player.p)<player.r+shotS&&player.inv<=0){hurt(s.vx,s.vz);s.dead=true}
     else if(s.t>3.6){s.dead=true;add(PAY.turrets,'turrets',s.p.clone())}
@@ -958,11 +1050,11 @@ function update(dt){
 
   // --- orbs and coins
   const magR=L('magnet')?6.5*mv('magnet','size'):0;
-  for(const o of orbs){o.mesh.rotation[o.id==='gold'?'z':'y']+=dt*4;o.p.y=.75+.15*Math.sin(S.t*4+o.p.x);
+  for(const o of orbs){o.mesh.rotation[o.id==='gold'?'z':'y']+=dt*4;o.p.y=ARENA.fy(o.p.x,o.p.z)+.75+.15*Math.sin(S.t*4+o.p.x);
     const dx=player.p.x-o.p.x,dz=player.p.z-o.p.z,d=Math.hypot(dx,dz);
     if(magR&&d<magR&&d>.01){o.p.x+=dx/d*11*dt;o.p.z+=dz/d*11*dt}
     if(o.life!==undefined){o.life-=dt;o.mesh.visible=o.life>1.2||Math.floor(o.life*12)%2===0}
-    if(Math.hypot(o.p.x,o.p.z)>R||o.life<=0){world.remove(o.mesh);o.dead=true}
+    if(!ARENA.on(o.p.x,o.p.z)||o.life<=0){world.remove(o.mesh);o.dead=true}
     else if(d<player.r+.55*o.s&&Math.abs(player.p.y-o.p.y)<player.r+.8*o.s){world.remove(o.mesh);o.dead=true;
       if(o.id==='heart'){S.hearts=Math.min(maxH(),S.hearts+1);burst(o.p,0xff3d77,8);snd(520,.25,'triangle',.07,520);continue}
       add(o.pts,o.id,o.p.clone(),o.id==='gold'&&L('jackpot')?3:1);burst(o.p,o.id==='gold'?0xffd23f:0x3df0c2,5);snd(o.id==='gold'?1100:880,.07,'square',.04,400);
@@ -975,21 +1067,21 @@ function update(dt){
       shockwave(bm.p.x,bm.p.z,3.6*mv('bomb','size'),15*mv('bomb','force'),true,stacks('bomb','force')>0)}}
   bombs=bombs.filter(b=>!b.dead);
   // --- painter
-  if(L('paint')){const cw=2*R0/PN,br=.8*mv('paint','size');
-    if(player.g&&Math.hypot(player.p.x,player.p.z)<R){
-      for(let i=Math.max(0,Math.floor((player.p.x-br+R0)/cw));i<=Math.min(PN-1,Math.floor((player.p.x+br+R0)/cw));i++)
-        for(let j=Math.max(0,Math.floor((player.p.z-br+R0)/cw));j<=Math.min(PN-1,Math.floor((player.p.z+br+R0)/cw));j++){const k=j*PN+i;
-          if(pcell[k]<=0&&Math.hypot(-R0+(i+.5)*cw,-R0+(j+.5)*cw)<R-.3){pcell[k]=12;pdirty=true;add(PAY.paint,'paint',null);snd(700+i*20,.03,'triangle',.02)}}}
+  if(L('paint')){const PX=R0*ARENA.ext,cw=2*PX/PN,br=.8*mv('paint','size');paintMesh.scale.setScalar(PX);
+    if(player.g&&ARENA.on(player.p.x,player.p.z)){
+      for(let i=Math.max(0,Math.floor((player.p.x-br+PX)/cw));i<=Math.min(PN-1,Math.floor((player.p.x+br+PX)/cw));i++)
+        for(let j=Math.max(0,Math.floor((player.p.z-br+PX)/cw));j<=Math.min(PN-1,Math.floor((player.p.z+br+PX)/cw));j++){const k=j*PN+i;
+          if(pcell[k]<=0&&ARENA.on(-PX+(i+.5)*cw,-PX+(j+.5)*cw,.3)){pcell[k]=12;pdirty=true;add(PAY.paint,'paint',null);snd(700+i*20,.03,'triangle',.02)}}}
     for(let k=0;k<pcell.length;k++)if(pcell[k]>0){pcell[k]-=dt;if(pcell[k]<=0)pdirty=true}
     if(pdirty){pdirty=false;pctx.clearRect(0,0,pcan.width,pcan.height);pctx.fillStyle=stacks('paint','score')?'#ffc21a':'#ff3d77';
       for(let k=0;k<pcell.length;k++)if(pcell[k]>0)pctx.fillRect((k%PN)*16+1,Math.floor(k/PN)*16+1,14,14);ptex.needsUpdate=true}}
   // --- checkpoints
   if(L('courier')){const fr2=1.4*mv('courier','size');
-    if(!flag.on||Math.hypot(flag.p.x,flag.p.z)>R*.9){let bx=0,bz=0,bd=-1;for(let i=0;i<8;i++){const[x,z]=spot(.85,0),d=Math.hypot(x-player.p.x,z-player.p.z);if(d>bd){bd=d;bx=x;bz=z}}flag.p.set(bx,0,bz);flag.on=true}
+    if(!flag.on||!ARENA.on(flag.p.x,flag.p.z,.8)){let bx=0,bz=0,bd=-1;for(let i=0;i<8;i++){const[x,z]=spot(.85,0),d=Math.hypot(x-player.p.x,z-player.p.z);if(d>bd){bd=d;bx=x;bz=z}}flag.p.set(bx,0,bz);flag.on=true}
     flag.mesh.position.set(flag.p.x,.04,flag.p.z);flag.mesh.scale.set(fr2,1,fr2);
     if(Math.hypot(player.p.x-flag.p.x,player.p.z-flag.p.z)<fr2+player.r*.5&&player.p.y<3&&player.p.y>0){flag.on=false;add(PAY.courier,'courier',player.p.clone());snd(780,.12,'triangle',.06,400);burst(player.p,0xffd23f,6)}}
   // --- spotlight
-  if(L('hill')){hill.t-=dt;if(hill.t<=0||Math.hypot(hill.to.x,hill.to.z)>R*.75){hill.t=5;const[x,z]=spot(.7,0);hill.to.set(x,0,z)}
+  if(L('hill')){hill.t-=dt;if(hill.t<=0||!ARENA.on(hill.to.x,hill.to.z,1.5)){hill.t=5;const[x,z]=spot(.7,0);hill.to.set(x,0,z)}
     hill.p.lerp(hill.to,1-Math.exp(-1.2*dt));hill.mesh.position.set(hill.p.x,.03,hill.p.z);
     const inside=Math.hypot(player.p.x-hill.p.x,player.p.z-hill.p.z)<hill.r&&player.p.y<3&&player.p.y>0;hill.mesh.material.opacity=inside?.6:.3;
     if(inside){timers.hillAcc+=dt;if(timers.hillAcc>=.5){timers.hillAcc=0;add(PAY.hill,'hill',player.p.clone());snd(520,.05,'triangle',.04)}}}
@@ -1039,7 +1131,7 @@ function visuals(dt,rdt){
   scene.background.lerp(night?NIGHT:SKY,k);scene.fog.color.copy(scene.background);
   hemi.intensity+=((night?.1:.78)-hemi.intensity)*k;sun.intensity+=((night?.06:.85)-sun.intensity)*k;lamp.intensity+=((night?1.9:0)-lamp.intensity)*k;
   tmp.copy(player.p).applyMatrix4(world.matrixWorld);lamp.position.set(tmp.x,tmp.y+3,tmp.z);
-  const asp=camera.aspect,zoom=asp<1.25?Math.min(2,Math.pow(1.25/asp,.75)):1;
+  const asp=camera.aspect,zoom=(asp<1.25?Math.min(2,Math.pow(1.25/asp,.75)):1)*Math.max(1,(R/R0)*.6+ARENA.ext*.4);
   const px=clamp(player.p.x,-R0,R0),pz=clamp(player.p.z,-R0,R0);
   let tx=px*.45,tz=pz*.45,ty=0,ox=0,oy=16,oz=17,fov=48;
   if(S.phase==='title'){camSpin+=rdt*.25;ox=Math.sin(camSpin)*17;oz=Math.cos(camSpin)*17}
@@ -1112,10 +1204,10 @@ function wpick(pool,n,ok){const out=[],p=pool.slice();
   return out}
 function typeOffers(type){
   if(type==='mod')return modOffers();
-  let pool=CARDS.filter(c=>c.type===type&&!c.syn&&!L(c.id)&&unlocked(c.id)&&(!c.req||c.req()));
+  let pool=CARDS.filter(c=>c.type===type&&!c.syn&&!L(c.id)&&unlocked(c.id)&&!excluded(c)&&(!c.req||c.req()));
   if(S.pickCount===0)pool=pool.filter(c=>c.goal);
-  const out=wpick(pool,3,(c,out)=>!(c.cam&&out.some(o=>o.cam))&&!(c.goal&&S.pickCount&&out.some(o=>o.goal))).map(card=>({type,card}));
-  if(type==='rule'&&S.pickCount){const syn=CARDS.filter(c=>c.syn&&!L(c.id)&&c.syn.every(L));
+  const out=wpick(pool,3,(c,out)=>!(c.cam&&out.some(o=>o.cam))&&!(isEnv(c)&&out.some(isEnv))&&!(c.goal&&S.pickCount&&out.some(o=>o.goal))).map(card=>({type,card}));
+  if(type==='rule'&&S.pickCount){const syn=CARDS.filter(c=>c.syn&&!L(c.id)&&c.syn.every(L)&&!excluded(c));
     if(syn.length&&rng()<.75){const o={type,card:syn[Math.floor(rng()*syn.length)]};if(out.length<3)out.unshift(o);else out[0]=o}}
   return out;
 }
@@ -1139,7 +1231,7 @@ function cardHTML(o,i){
   else if(o.type==='mod'){const h=o.host,prompt=h.type==='prompt';name=o.mod.name+' '+h.name;tag='ATTACHES TO '+TYPE[h.type][0].toUpperCase();
     if(o.mod.id==='score'){desc=h.name+' pays double.';pay='Score ×2 on this card'}
     else{desc=h.mods[o.mod.id];pay=prompt?'Harder, so its bounty pays ×1.5':'No score change'}}
-  else{const c=o.card;name=c.name;desc=c.desc;tag=c.syn?'RARE':'NEW';pay=c.syn?'Needs '+c.syn.map(x=>byId[x].name).join(' + '):c.earn?(c.type==='prompt'?'Bounty: ':'Income: ')+c.earn:'Does not score'}
+  else{const c=o.card;name=c.name;desc=c.desc;const old=slotHolder(c);tag=c.syn?'RARE':old?'REPLACES '+old.name.toUpperCase():'NEW';pay=c.syn?'Needs '+c.syn.map(x=>byId[x].name).join(' + '):c.earn?(c.type==='prompt'?'Bounty: ':'Income: ')+c.earn:'Does not score'}
   const TT=o.card&&o.card.syn&&o.type!=='cut'?['Synergy','--lilac']:TYPE[o.type];
   return `<button class="card" type="button" data-i="${i}" style="--c:var(${TT[1]})">
     <span class="top"><span class="cat">${TT[0]}</span><span class="tag">${tag}</span></span>
@@ -1158,14 +1250,16 @@ function showPick(reroll){
   $('reroll').hidden=S.pickCount<1;$('reroll').disabled=S.reroll<1;$('reroll').textContent='REROLL ('+S.reroll+' LEFT)';
   $('pick').hidden=false;if(!reroll)snd(440,.1,'triangle',.05,220);
 }
+function removeCard(id){
+  for(const x of [id].concat(CARDS.filter(c=>c.syn&&L(c.id)&&c.syn.includes(id)).map(c=>c.id))){S.lv[x]=0;delete S.mods[x];delete S.trig[x];S.picks=S.picks.filter(y=>y!==x);delete timers[x]}}
 function choose(i){
   const o=S.offers[i];if(!o||S.phase!=='pick')return;
-  if(o.type==='cut'){for(const id of [o.card.id].concat(CARDS.filter(x=>x.syn&&L(x.id)&&x.syn.includes(o.card.id)).map(x=>x.id))){S.lv[id]=0;delete S.mods[id];delete S.trig[id];S.picks=S.picks.filter(x=>x!==id)}S.cutAt=S.pickCount;snd(260,.2,'sawtooth',.06,-120);chips();return showPick(true)}
+  if(o.type==='cut'){removeCard(o.card.id);S.cutAt=S.pickCount;snd(260,.2,'sawtooth',.06,-120);chips();return showPick(true)}
   lastShown=S.offers.filter(x=>x!==o&&x.card).map(x=>x.card.id);for(const id of lastShown)passed[id]=(passed[id]||0)+1;
   if(o.trig)S.trig[o.host.id]=o.trig.id;
   else if(o.type==='mod'){const m=S.mods[o.host.id]||(S.mods[o.host.id]={});m[o.mod.id]=(m[o.mod.id]||0)+1}
   else{const c=o.card;
-    if(c.cam)for(const x of CARDS)if(x.cam&&L(x.id)){S.lv[x.id]=0;S.picks=S.picks.filter(id=>id!==x.id)}
+    const old=slotHolder(c);if(old){removeCard(old.id);banner(c.name+' replaces '+old.name)}
     S.lv[c.id]=1;S.picks.push(c.id);S.hearts=Math.min(S.hearts,maxH());if(c.syn&&!save.syn.includes(c.id)){save.syn.push(c.id);persist()}}
   S.pickCount++;if(S.pickCount%10===0)S.reroll++;snd(660,.12,'square',.05,400);$('pick').hidden=true;chips();
   if(S.pickCount>1)S.hearts=Math.min(maxH(),S.hearts+1);
@@ -1176,7 +1270,7 @@ function choose(i){
 // After a choice: apply the new card and carry on from exactly where play stopped.
 function resumePlay(){
   applyStatics();timers.pick=PICK_EVERY;jumpQ=false;for(const k in actQ)actQ[k]=false;
-  if(S.t===0){player.p.set(0,player.r,0);player.v.set(0,0,0);banner('Go!')}
+  if(S.t===0){const[sx,sz]=ARENA.nearest(0,0,2);player.p.set(sx,player.r+ARENA.fy(sx,sz),sz);player.v.set(0,0,0);banner('Go!')}
   player.inv=Math.max(player.inv,1);S.phase='play';hudCache='';last=performance.now();if(coarse)$('touch').hidden=false;
 }
 function startBoss(){
@@ -1263,7 +1357,7 @@ function frame(now){
   renderer.render(scene,camera);requestAnimationFrame(frame);
 }
 requestAnimationFrame(frame);
-window.__fc={S,L,LB,pk,spawnPickup,resumePlay,refreshBoard,save,encodeBuild,decodeBuild,unlocked,choose,player,update,CARDS,MODS,TRIGS,PAY,FIRE,stick,ev,hill,flag,startRun,jump(){jumpQ=true},dash(){actQ.dash=true},act(k){actQ[k]=true},
+window.__fc={S,L,LB,ARENA,SHAPES,excluded,slotHolder,pk,spawnPickup,resumePlay,refreshBoard,save,encodeBuild,decodeBuild,unlocked,choose,player,update,CARDS,MODS,TRIGS,PAY,FIRE,stick,ev,hill,flag,startRun,jump(){jumpQ=true},dash(){actQ.dash=true},act(k){actQ[k]=true},
   get bodies(){return bodies},get orbs(){return orbs},get meteors(){return meteors},get mines(){return mines},get R(){return R},
   arms(){const a=laserPivot.children.filter(m=>m.userData.i!==undefined);return a.map(m=>laserA+m.userData.i*6.283/a.length)}};
 })();
