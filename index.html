@@ -897,7 +897,6 @@ function update(dt){
         if(L('pogo')&&b.v.y<7)b.v.y=8.5*mv('pogo','force')}
     }else b.g=false;
     if(b.g&&b.kind!=='boulder'){const k=Math.exp(-fr*dt);b.v.x*=k;b.v.z*=k}
-    if(b===player){const off=Math.hypot(b.p.x,b.p.z)>R+1||b.p.y<-1;b.offT=off?(b.offT||0)+dt:0;if(b.offT>3.5){b.offT=0;fell(b);continue}}
     if(b.p.y<-16)fell(b);
   }
   if(S.phase!=='play')return;
