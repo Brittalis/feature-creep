@@ -111,6 +111,30 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
 .card .desc{font-size:15px;line-height:1.4;min-height:3.9em;flex:1}
 
 .card .pay{font-weight:700;font-size:13px;border-top:2px dashed var(--ink);padding-top:8px}
+.card{position:relative;overflow:hidden}
+.card .orig{font-size:12px;line-height:1.3;border-left:4px solid var(--c);padding:2px 0 2px 8px;background:rgba(10,7,32,.06)}
+.card .orig b{display:block;font-family:var(--display);font-size:14px}
+.card .prev{display:none;font-size:12px;line-height:1.3;font-style:italic;border-top:2px dashed var(--ink);padding-top:6px}
+.card .prev i{display:block;height:6px;margin:4px 0 0;background:linear-gradient(90deg,var(--c) 0 20%,transparent 20%) 0 0/200% 100%;border:2px solid var(--ink);animation:prevrun 1.6s linear infinite}
+@keyframes prevrun{to{background-position:-200% 0}}
+.card:hover .prev,.card:focus-visible .prev{display:block}
+.card .fl{font-weight:700;font-size:12px}.card .fl.enh{color:#9a6200}.card .fl.ovl{color:#6a2fd0}
+.card.enh{outline:3px solid var(--sun);outline-offset:-3px}.card.ovl{outline:3px dashed #8a4dff;outline-offset:-3px}
+.card .rar{font-weight:700;font-size:11px;letter-spacing:.12em;text-transform:uppercase}
+.card.r-uncommon,.card.r-rare{box-shadow:6px 6px 0 var(--ink),0 0 0 3px var(--c)}
+.card.r-uncommon::after,.card.r-rare::after{content:"";position:absolute;top:-20%;bottom:-20%;left:-60%;width:40%;background:linear-gradient(100deg,transparent,rgba(255,255,255,.65),transparent);transform:skewX(-18deg);animation:glint 3.6s ease-in-out infinite;pointer-events:none}
+.card.r-rare::after{animation-duration:2.2s;background:linear-gradient(100deg,transparent,rgba(255,236,150,.9),transparent)}
+.card.r-rare{box-shadow:6px 6px 0 var(--ink),0 0 0 3px var(--c),0 0 22px 4px rgba(255,210,63,.65)}
+@keyframes glint{0%,55%{left:-60%}100%{left:130%}}
+#pick:not([hidden]){animation:pickin .45s ease-out}
+#pick{padding-bottom:64px}
+@keyframes pickin{from{opacity:0;transform:scale(.96)}to{opacity:1;transform:none}}
+.fbform{display:flex;flex-direction:column;gap:8px;width:min(420px,90vw);align-items:stretch}
+.fbform summary{cursor:pointer;font-weight:700;font-size:13px;letter-spacing:.12em;text-transform:uppercase;text-align:center}
+.fbform textarea{font:500 15px var(--body);padding:9px 12px;border:3px solid var(--paper);background:var(--ink);color:var(--paper);min-height:84px;resize:vertical;width:100%;box-sizing:border-box}
+.fbform .eyebrow{text-align:center}
+#pickbuild{max-width:980px;display:flex;flex-wrap:wrap;gap:6px;justify-content:center;font-size:12px;margin-top:6px}
+#pickbuild .chip{display:inline-block;padding:2px 8px;border:2px solid var(--ink);background:var(--c);color:var(--ink);font-weight:700}
 .card .num{font-weight:700;font-size:12px;letter-spacing:.1em;opacity:.55}
 #lb{position:absolute;right:max(16px,env(safe-area-inset-right,0px));bottom:calc(16px + env(safe-area-inset-bottom,0px));width:260px;background:var(--ink);border:3px solid var(--paper);box-shadow:6px 6px 0 var(--hot);padding:10px 12px;display:flex;flex-direction:column;gap:6px;text-align:left}
 #lb h3{margin:0;font-family:var(--display);font-weight:400;font-size:18px;color:var(--sun)}
@@ -159,7 +183,7 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
   .card .name{font-size:19px} .card .desc{min-height:0;font-size:14px}
   .overlay{gap:12px;padding-top:72px} .overlay h1{line-height:1.05;text-shadow:4px 4px 0 var(--hot)} .overlay p{font-size:15px}
 }
-@media (prefers-reduced-motion:reduce){#banner.go,.float,#flash.go,#score.bump,.trk.fire{animation-duration:.01s}.card,.btn{transition:none}}
+@media (prefers-reduced-motion:reduce){.card::after{display:none}.card .prev i{animation:none}#banner.go,.float,#flash.go,#score.bump,.trk.fire{animation-duration:.01s}.card,.btn{transition:none}}
 </style>
 
 <div id="stage">
@@ -202,6 +226,7 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
     </form>
     <div id="codeerr" class="eyebrow" hidden></div>
     <div id="career" class="eyebrow"></div>
+    <div class="fbhost"></div>
     <details id="news">
       <summary><span id="ver">v1.1</span> · What's new</summary>
       <ul id="newslist"></ul>
@@ -222,6 +247,7 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
     <div class="eyebrow" id="pickeyebrow">Pick 1 · Rule</div>
     <h2 id="pickhead">What is this game about?</h2>
     <div id="cards"></div>
+    <div id="pickbuild"></div>
     <div class="rowbtns"><button id="reroll" class="btn ghost" type="button">REROLL (1 LEFT)</button><button id="skip" class="btn ghost" type="button" hidden>KEEP EVERYTHING</button></div>
   </div>
 
@@ -233,6 +259,7 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
     <div id="pauselist"></div>
     <div class="rowbtns">
       <button id="resume" class="btn" type="button">Resume</button>
+      <button id="tiltbtn" class="btn ghost" type="button" hidden>TILT: OFF</button>
       <button id="endrun" class="btn ghost" type="button">END RUN</button>
     </div>
   </div>
@@ -250,6 +277,7 @@ kbd{font:700 12px var(--body);background:var(--ink);padding:2px 6px;border:1px s
       </div>
       <div id="lbmsg" class="eyebrow"></div>
     </form>
+    <div class="fbhost"></div>
     <pre id="sheet"></pre>
     <div class="rowbtns">
       <button id="again" class="btn" type="button">New build</button>
@@ -276,6 +304,8 @@ const MODS=[
  {id:'speed',name:'Turbo',f:1.5},
  {id:'force',name:'Heavy',f:1.6},
  {id:'score',name:'Golden',f:2},
+ {id:'long',name:'Lingering',f:1.5},
+ {id:'lucky',name:'Lucky',f:1},
 ];
 const CARDS=[
  // Rules that earn steady income
@@ -316,9 +346,9 @@ const CARDS=[
  {id:'turrets',type:'prompt',name:'Turret Volley',desc:'Rim turrets lob shots at you. A hit costs a heart.',earn:'5 per shot dodged',word:'Turret',pitch:'turret fire',mods:{count:'Twice as many turrets.',size:'Shots are 1.6× bigger.',speed:'Turrets fire 1.5× faster.'}},
  {id:'gold',type:'prompt',name:'Gold Rush',desc:'Every few seconds coins rain down, then vanish.',earn:'5 per coin',word:'Gold Rush',pitch:'coin showers',mods:{count:'Twice as many coins.',size:'Coins are bigger.',speed:'Showers come 1.5× as often.'}},
  {id:'stampede',type:'prompt',name:'Stampede',desc:'A wall of boulders rolls across the plate.',earn:'20 per stampede survived',word:'Stampede',pitch:'boulder stampedes',mods:{count:'Twice as many boulders.',size:'Boulders are bigger and heavier.',speed:'Boulders roll 1.5× faster.'}},
- {id:'gust',type:'prompt',name:'Gust',desc:'A wind blows everything across the plate for a few seconds.',earn:'15 per gust weathered',word:'Gale',pitch:'gale-force gusts',mods:{speed:'Gusts come 1.5× as often.',force:'Gusts blow 1.6× harder.'}},
+ {id:'gust',type:'prompt',name:'Gust',desc:'A wind blows everything across the plate for a few seconds.',earn:'15 per gust weathered',word:'Gale',pitch:'gale-force gusts',mods:{long:'Gusts last 1.5× longer.',speed:'Gusts come 1.5× as often.',force:'Gusts blow 1.6× harder.'}},
  {id:'mines',type:'prompt',name:'Minefield',desc:'Mines scatter across the plate. Anything that touches one sets it off.',earn:'4 per mine that fizzles',word:'Minefield',pitch:'minefields',mods:{count:'Twice as many mines.',size:'Blasts are 1.6× wider.',speed:'Mines scatter 1.5× as often.'}},
- {id:'mirror',type:'prompt',name:'Mirror',desc:'Your controls flip for three seconds.',earn:'15 per flip survived',word:'Mirror',pitch:'mirrored controls',mods:{speed:'Flips come 1.5× as often.'}},
+ {id:'mirror',type:'prompt',name:'Mirror',desc:'Your controls flip for three seconds.',earn:'15 per flip survived',word:'Mirror',pitch:'mirrored controls',mods:{long:'Flips last 1.5× longer.',speed:'Flips come 1.5× as often.'}},
  {id:'lava',type:'prompt',name:'Hot Plate',desc:'The plate glows, then zaps. Be in the air when it does.',earn:'20 per zap jumped',word:'Hot Plate',pitch:'a scalding floor',mods:{speed:'Zaps come 1.5× as often.'}},
  // Synergies: rare rules that are only offered once you own both parents.
  // Build codes store a card's position in this list, so always add new cards at the end.
@@ -333,7 +363,7 @@ const CARDS=[
  {id:'grapple',type:'rule',name:'Grapple',desc:'E: hook the nearest thing and yank you both together. Off the plate, it hooks you back on.',pitch:'grapple',mods:{force:'Yanks 1.6× harder.',speed:'Recharges 1.5× faster.'}},
  {id:'bomb',type:'rule',name:'Bomb Toss',desc:'F: lob a bomb that blows everything else outward.',pitch:'lob bombs',mods:{count:'Throws two bombs.',size:'Blasts are 1.6× wider.',force:'Blasts throw 1.6× harder.',speed:'Recharges 1.5× faster.'}},
  {id:'blink',type:'rule',name:'Blink',desc:'Q: teleport a short way in the direction you are moving.',pitch:'blink',mods:{size:'Blinks 1.6× further.',speed:'Recharges 1.5× faster.'}},
- {id:'paint',type:'rule',goal:1,name:'Painter',desc:'Roll over the plate to paint it. Paint fades, so keep covering ground.',earn:1,word:'Paint Job',pitch:'paint the floor',mods:{size:'A 1.6× wider brush.'}},
+ {id:'paint',type:'rule',goal:1,name:'Painter',desc:'Roll over the plate to paint it. Paint fades, so keep covering ground.',earn:1,word:'Paint Job',pitch:'paint the floor',mods:{size:'A 1.6× wider brush.',force:'Paint lasts 1.6× longer.',speed:'Wet Paint pays 1.5× as often.'},modReq:{speed:'wetpaint'}},
  {id:'juggle',type:'rule',goal:1,name:'Keepy-Uppy',desc:'A beach ball drops in. Hit it while it is in the air.',earn:1,word:'Juggle',pitch:'juggle a beach ball',mods:{count:'Two beach balls.'}},
  {id:'crates',type:'rule',goal:1,name:'Demolition',desc:'Crates pile up. Smash them by ramming at full speed, or with anything that hits hard.',earn:1,word:'Demolition',pitch:'smash crates',mods:{count:'Twice as many crates.'}},
  {id:'glass',type:'rule',name:'Glass Cannon',desc:'You can only hold 3 hearts. Everything pays ×1.5.',word:'Glass'},
@@ -384,10 +414,10 @@ const CARDS=[
  {id:'fog',type:'rule',slot:'sky',name:'Fog',desc:'Thick fog hides the far side of the plate. Prompt bounties ×1.25.',word:'Foggy'},
  {id:'storm',type:'rule',slot:'sky',name:'Storm',desc:'Lightning strikes marked spots. Prompt bounties ×1.25.',word:'Stormy'},
  // Environment prompts
- {id:'quake',type:'prompt',name:'Earthquake',desc:'The plate cracks into pieces for 4 s.',word:'Quake',pitch:'earthquakes',mods:{speed:'Quakes come 1.5× as often.',size:'Cracks are 1.6× wider.'}},
- {id:'tornado',type:'prompt',name:'Tornado',desc:'A twister wanders the plate and lifts what it catches.',word:'Tornado',pitch:'tornadoes',mods:{size:'The twister is 1.6× wider.',speed:'Twisters come 1.5× as often.',force:'It pulls 1.6× harder.'}},
+ {id:'quake',type:'prompt',name:'Earthquake',desc:'The plate cracks into pieces for 4 s.',word:'Quake',pitch:'earthquakes',mods:{long:'Quakes last 1.5× longer.',speed:'Quakes come 1.5× as often.',size:'Cracks are 1.6× wider.'}},
+ {id:'tornado',type:'prompt',name:'Tornado',desc:'A twister wanders the plate and lifts what it catches.',word:'Tornado',pitch:'tornadoes',mods:{long:'The twister sticks around 1.5× longer.',size:'The twister is 1.6× wider.',speed:'Twisters come 1.5× as often.',force:'It pulls 1.6× harder.'}},
  {id:'flood',type:'prompt',name:'Flood',desc:'Water rises. Get up on a raised pad before it peaks.',word:'Flood',pitch:'floods',mods:{speed:'Floods come 1.5× as often.'}},
- {id:'swap',type:'prompt',name:'Arena Swap',desc:'The plate turns into a different shape for 5 s.',word:'Shapeshift',pitch:'shapeshifting plates',mods:{speed:'Swaps come 1.5× as often.'}},
+ {id:'swap',type:'prompt',name:'Arena Swap',desc:'After a warning, the plate morphs into a different shape for 5 s.',word:'Shapeshift',pitch:'shapeshifting plates',mods:{long:'Swaps last 1.5× longer.',speed:'Swaps come 1.5× as often.'}},
  {id:'pits',type:'prompt',name:'Pit Trap',desc:'Holes open under your feet. Move when you see the ring.',word:'Pitfall',pitch:'pit traps',mods:{count:'Twice as many pits.',size:'Pits are 1.6× wider.',speed:'Pits open 1.5× as often.'}},
  // More synergies: rare rules, offered once you own both parents.
  {id:'pinwiz',type:'rule',syn:['bowl','stampede'],name:'Pinball Wizard',desc:'Boulders bounce off the bowl\'s rim and keep rolling. Stampedes pay double.',word:'Wizard'},
@@ -414,13 +444,36 @@ const CARDS=[
  {id:'armored',type:'rule',syn:['bank','wrap'],name:'Armored Car',desc:'Wrapping around banks your points.',word:'Armored'},
  {id:'landlord',type:'rule',syn:['rent','hunter'],name:'Landlord',desc:'Paying the rent heals a heart.',word:'Landlord'},
  {id:'overclock',type:'rule',syn:['countdown','combo'],name:'Overclock',desc:'The clock stops while you\'re on a hot streak.',word:'Overclocked'},
+ {id:'wetpaint',type:'rule',req:()=>L('paint'),name:'Wet Paint',desc:'Painter pays for being painted: every painted tile pays out every 2 s while its paint lasts. Painting itself pays nothing.',earn:'0.5 per tile every 2 s',word:'Wet',mods:{}},
+ {id:'sprint',type:'rule',slot:'draft',name:'Sprint Goal',desc:'Hit the score target within 30 s and the next card appears. Miss it and you lose a heart.',word:'Driven'},
+ {id:'scars',type:'rule',slot:'draft',name:'Scars',desc:'The next card appears after you survive 3 hits.',word:'Scarred'},
+ {id:'chain',type:'rule',slot:'draft',name:'Chain Gang',desc:'The next card appears after a chain of 12 payouts, each within 2 s of the last.',word:'Chained'},
+ {id:'overdrive',type:'rule',req:()=>requirementMode(),name:'Overdrive',desc:'From now on, 1 of every 3 offers is Overloaded: it comes with a free modifier.',word:'Overdriven'},
+ {id:'slipstream',type:'rule',syn:['dash','ice'],name:'Slipstream',desc:'Dashing leaves a trail that pays.',word:'Streaking'},
+ {id:'paintbomb',type:'rule',syn:['paint','bomb'],name:'Paint Bomb',desc:'Bombs splash paint across the plate.',word:'Splashy'},
+ {id:'skywriter',type:'rule',syn:['paint','djump'],name:'Sky Writer',desc:'You paint the plate even while airborne.',word:'Skywriting'},
+ {id:'hookshot',type:'rule',syn:['grapple','blaster'],name:'Hook Shot',desc:'The hook recharges 1.4× faster and the blaster hits 1.5× harder.',word:'Hooked'},
+ {id:'tidalwave',type:'rule',syn:['flood','gust'],name:'Tidal Wave',desc:'Every flood brings a gust with it, and floods pay double.',word:'Tidal'},
+ {id:'quakerider',type:'rule',syn:['quake','pogo'],name:'Quake Rider',desc:'Pogo bounces during a quake pay.',word:'Rocking'},
+ {id:'tamer',type:'rule',syn:['tornado','orbit'],name:'Tornado Tamer',desc:'Wrecking balls reach 1.6× further in a twister, and twisters pay double.',word:'Twisting'},
+ {id:'mirrormatch',type:'rule',syn:['mirror','tag'],name:'Mirror Match',desc:'Runners are worth triple while your controls are flipped.',word:'Mirrored'},
+ {id:'satellite',type:'rule',slot:'shape',shape:'satellite',name:'Satellite',desc:'A big plate with a small disk floating beside it. Jump the gap.',word:'Orbital'},
+ {id:'floatisland',type:'prompt',name:'Floating Island',desc:'A raised island drifts across the plate for 8 s. Stand on top of it for 3 s.',pitch:'island hopping',word:'Island',mods:{size:'The island is 1.6× wider.',speed:'Islands come 1.5× as often.'}},
+ {id:'bonusdisk',type:'rule',name:'Bonus Disk',desc:'A small disk marks the plate. Rule income is doubled while you stand in it. It moves every time you pick a card.',word:'Bonus'},
+ {id:'walls',type:'prompt',name:'Walls Rise',desc:'Walls rise out of the plate for 8 s. Get through without losing a heart.',pitch:'rising walls',word:'Walled',mods:{count:'Twice as many walls.',speed:'Walls come 1.5× as often.'}},
+ {id:'simon',type:'prompt',name:'Simon Says',desc:'Four pads flash in order. Step on them in the same order.',pitch:'copycat pads',word:'Simon',mods:{count:'One more step in every sequence.',speed:'Sequences come 1.5× as often.'}},
+ {id:'katamari',type:'rule',goal:1,excludes:['big','tiny'],name:'Katamari',desc:'Small things stick to you as you roll. You grow and score more, but a hit shakes some off.',word:'Rolling',pitch:'roll up everything',mods:{}},
+ {id:'mezzanine',type:'rule',slot:'levels',goal:1,excludes:['bowl','dome','conveyor','crumble','paint','flood','quake','pits','swap'],name:'Mezzanine',desc:'A second plate floats above the first. Launch pads throw you up and slides bring you down. Falling off the top lands you on the bottom.',word:'Upstairs',pitch:'climb to the top deck',mods:{size:'The upper plate is 1.35× wider.'}},
 ];
 const byId=Object.fromEntries(CARDS.map(c=>[c.id,c]));
+// Earnable rerolls: these cards grant a reroll every Nth time they pay out.
+const REROLL_EVERY={gold:10,flip:3,mirror:2,lava:4,quake:2,tag:6};
+for(const id in REROLL_EVERY){const c=byId[id];if(c)c.desc+=' Every '+REROLL_EVERY[id]+(c.type==='prompt'?' bounties':' catches')+' earns a reroll.'}
 // Base payouts, tuned from bot-played sprints so one sprint of any scoring card is worth roughly the same.
-const PAY={orbs:10,sumo:30,hill:6,air:3,tag:28,courier:23,meteors:10,chasers:20,laser:25,flip:25,shrink:40,turrets:8,gold:5,stampede:35,gust:35,mines:8,mirror:40,lava:35,paint:2,juggle:12,crates:12,quake:30,tornado:25,flood:30,swap:25,pits:10};
+const PAY={orbs:10,sumo:30,hill:6,air:3,tag:28,courier:23,meteors:10,chasers:20,laser:25,flip:25,shrink:40,turrets:8,gold:5,stampede:35,gust:35,mines:8,mirror:40,lava:35,paint:2,wetpaint:.5,slipstream:2,quakerider:6,floatisland:30,walls:30,simon:12,katamari:8,mezzanine:2,juggle:12,crates:12,quake:30,tornado:25,flood:30,swap:25,pits:10};
 const UNIT={orbs:['per orb',1],sumo:['per pin',1],hill:['per second inside',2],air:['per second airborne',4],tag:['per catch',1],courier:['per checkpoint',1],meteors:['per meteor dodged',1],
   chasers:['per bully knocked off',1],laser:['per bar jumped',1],flip:['per hiccup landed',1],shrink:['per squeeze survived',1],turrets:['per shot dodged',1],gold:['per coin',1],
-  stampede:['per stampede survived',1],gust:['per gust weathered',1],mines:['per mine that fizzles',1],mirror:['per flip survived',1],lava:['per zap jumped',1],paint:['per tile painted',1],juggle:['per mid-air hit',1],crates:['per crate',1],quake:['per quake survived',1],tornado:['per twister survived',1],flood:['per flood kept dry',1],swap:['per swap survived',1],pits:['per pit dodged',1]};
+  stampede:['per stampede survived',1],gust:['per gust weathered',1],mines:['per mine that fizzles',1],mirror:['per flip survived',1],lava:['per zap jumped',1],paint:['per tile painted',1],wetpaint:['per painted tile, every 2 s',1],slipstream:['per 0.1 s of dashing',1],quakerider:['per bounce during a quake',1],floatisland:['per island ridden',1],walls:['per wall set survived',1],simon:['per step of a sequence',1],katamari:['per thing picked up (× your size)',1],mezzanine:['per 0.5 s on the upper plate',1],juggle:['per mid-air hit',1],crates:['per crate',1],quake:['per quake survived',1],tornado:['per twister survived',1],flood:['per flood kept dry',1],swap:['per swap survived',1],pits:['per pit dodged',1]};
 for(const id in PAY)byId[id].earn=PAY[id]*UNIT[id][1]+' '+UNIT[id][0];
 // Triggers rewire a prompt: it stops firing on its timer and fires on an event instead.
 const TRIGS=[
@@ -449,14 +502,14 @@ const maxH=()=>L('sudden')?1:L('glass')?3:MAXH;
 const VERBS=[{id:'dash',key:'Shift',label:'Dash'},{id:'grapple',key:'E',label:'Hook'},{id:'bomb',key:'F',label:'Bomb'},{id:'blink',key:'Q',label:'Blink'}];
 
 /* ---------- state ---------- */
-const S={phase:'title',run:'normal',seed:1,day:0,code:'',picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,offers:[],pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:200,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99};
+const S={phase:'title',run:'normal',seed:1,day:0,code:'',picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,rrN:{},enh:{},ovl:{},offers:[],pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:200,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99};
 const L=id=>S.lv[id]?1:0;
 const stacks=(id,stat)=>(S.mods[id]||{})[stat]||0;
 const MF=Object.fromEntries(MODS.map(m=>[m.id,m.f]));
 const mv=(id,stat)=>Math.pow(MF[stat],stacks(id,stat));
 function payMul(id){
-  let k=Math.pow(2,stacks(id,'score'));
-  if(byId[id].type==='prompt'){const risk=stacks(id,'count')+stacks(id,'size')+stacks(id,'speed')+stacks(id,'force');
+  let k=Math.pow(2,stacks(id,'score'))*(S.enh[id]?1.25:1);
+  if(byId[id].type==='prompt'){const risk=stacks(id,'count')+stacks(id,'size')+stacks(id,'speed')+stacks(id,'force')+stacks(id,'long');
     k*=Math.pow(1.5,risk)*(L('tiny')?1.5:1)*(L('night')?1.5:1)*(L('daynight')||L('fog')||L('storm')?1.25:1)}
   else k*=(L('ice')?1.5:1)*(L('sticky')?1.25:1);
   if(byId[id].type==='rule'&&L('pact'))k*=1.5;
@@ -476,12 +529,19 @@ const today=()=>{const d=new Date();return d.getFullYear()*10000+(d.getMonth()+1
 let rng=Math.random;
 function seedRng(s){let a=s>>>0;rng=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296}}
 const b36=n=>n.toString(36).padStart(2,'0');
-function encodeBuild(){return 'fc1-'+(S.seed>>>0).toString(36)+'-'+S.picks.map(id=>{const m=S.mods[id]||{};let v=0;for(const st of MODS)v=v*3+(m[st.id]||0);
-  return b36(CARDS.findIndex(c=>c.id===id))+b36(v*5+(S.trig[id]?TRIGS.findIndex(x=>x.id===S.trig[id])+1:0))}).join('')}
-function decodeBuild(code){const m=/^#?fc1-([0-9a-z]{1,7})-((?:[0-9a-z]{4})+)$/.exec(String(code).trim().toLowerCase());if(!m)return null;const cards=[];
-  for(let i=0;i<m[2].length;i+=4){const c=CARDS[parseInt(m[2].substr(i,2),36)];let v=parseInt(m[2].substr(i+2,2),36);if(!c||isNaN(v)||cards.some(x=>x.id===c.id))return null;
-    const t=v%5;v=Math.floor(v/5);const mods={};for(let k=MODS.length-1;k>=0;k--){const s=v%3;v=Math.floor(v/3);if(s)mods[MODS[k].id]=s}
-    cards.push({id:c.id,mods,trig:t&&FIRE[c.id]?TRIGS[t-1].id:null})}
+// Build codes. fc1: 4 chars per card. fc2: 6 chars per card (2 index + 4 payload), room for 8 modifiers and the Enhanced/Overloaded flags.
+// A card's index is its position in CARDS, so cards are only ever appended to the end of CARDS.
+const b36w=(n,w)=>n.toString(36).padStart(w,'0');
+function encodeBuild(){return 'fc2-'+(S.seed>>>0).toString(36)+'-'+S.picks.map(id=>{const m=S.mods[id]||{};let v=0;for(let k=0;k<8;k++)v=v*3+(MODS[k]?m[MODS[k].id]||0:0); // 8 fixed modifier slots so new modifiers never shift old codes
+  const fl=(S.enh[id]?1:0)|(S.ovl[id]?2:0);
+  return b36w(CARDS.findIndex(c=>c.id===id),2)+b36w(((v*5)+(S.trig[id]?TRIGS.findIndex(x=>x.id===S.trig[id])+1:0))*4+fl,4)}).join('')}
+function decodeBuild(code){const str=String(code).trim().toLowerCase();let m=/^#?fc1-([0-9a-z]{1,7})-((?:[0-9a-z]{4})+)$/.exec(str),w=4;
+  if(!m){m=/^#?fc2-([0-9a-z]{1,7})-((?:[0-9a-z]{6})+)$/.exec(str);w=6}if(!m)return null;
+  const cards=[];
+  for(let i=0;i<m[2].length;i+=w){const c=CARDS[parseInt(m[2].substr(i,2),36)];let v=parseInt(m[2].substr(i+2,w-2),36);if(!c||isNaN(v)||c.hidden||cards.some(x=>x.id===c.id))return null;
+    let fl=0;if(w===6){fl=v%4;v=Math.floor(v/4)}
+    const t=v%5;v=Math.floor(v/5);const mods={};const slots=w===4?5:8;for(let k=slots-1;k>=0;k--){const s=v%3;v=Math.floor(v/3);if(s&&MODS[k])mods[MODS[k].id]=s}
+    cards.push({id:c.id,mods,trig:t&&FIRE[c.id]?TRIGS[t-1].id:null,enh:!!(fl&1),ovl:!!(fl&2)})}
   return {seed:parseInt(m[1],36),cards}}
 
 /* ---------- public leaderboard (Supabase REST) ----------
@@ -491,6 +551,29 @@ const LB={url:'https://wfzywfykvxyhjcigeimr.supabase.co',key:'sb_publishable_Ovq
 /* RELEASES: newest first. EVERY merge adds a new entry on top: a bumped version (1.1.1, 1.1.2, ...) plus its "What's new" notes.
    The top entry is the current version. Scores are stamped with it and the title screen shows its notes. */
 const RELEASES=[
+  {v:'1.5',notes:[
+    'New rule: Mezzanine, a second plate above the first. Launch pads throw you up, slides bring you down, and falling off the top lands you on the bottom (no heart lost).',
+    'Balance: a new 1.5 board. Mezzanine pays for time spent on the upper plate and for launches.']},
+  {v:'1.4',notes:[
+    'New prompts: Floating Island, Walls Rise and Simon Says. New rules: Satellite (a second small disk), Bonus Disk (double income inside it) and Katamari (stuff sticks to you as you grow).',
+    'Balance: a new 1.4 board. Katamari pays more the bigger you get, and a hit shakes some of it off.',
+    'A space skybox with stars and nebulas replaces the flat sky.']},
+  {v:'1.3',notes:[
+    'Balance: a new 1.3 board. Enhanced cards (5% of rule and prompt offers, 12% with a no-timer draft rule) pay ×1.25 or give a reroll.',
+    'New draft rules: Sprint Goal, Scars and Chain Gang. Overdrive (only offered with a no-timer draft rule) makes 1 of every 3 offers Overloaded: it comes with a free modifier.',
+    'New modifiers: Lingering (effects last 1.5× longer) and Lucky (payouts may pay triple).',
+    'Eight new synergies, including Paint Bomb, Hook Shot and Mirror Match.',
+    'Build codes are now fc2 (old fc1 codes still work).']},
+  {v:'1.2',notes:[
+    'Balance: scores restart on a fresh 1.2 board. Steering is tighter (snappier ground acceleration, more air control). Painter\'s Wet Paint pays for painted tiles instead of painting.',
+    'Stage changes: Arena Swap warns you, morphs the plate, and fires about every 35 s instead of 14. Shape cards morph in too.',
+    'New: Wet Paint for Painter, three boss types (tracker, charger, heavy) that dodge bumpers and the edge, and earnable rerolls.',
+    'Cards: rarity tiers with glints, the card you replace or change shown on the card, hover previews, and your build shown at every pick.',
+    'Balance: the game now gets steadily harder. Prompts fire faster, the plate erodes after 5 min, and from 8 min Overtime drains a heart on a shrinking timer.',
+    'Hearts now drop onto the plate as pickups instead of being given automatically.',
+    'Mobile: tap anywhere to jump, optional tilt steering in the pause menu, and a short lead-in so you cannot tap a card by accident.',
+    'Fixes: Painter follows arena size, fog works from the top-down camera, Flood no longer costs two hearts, off-map falls are quicker, sound effects no longer silence the music.',
+    'Feedback box on the title and game-over screens.']},
   {v:'1.1.4',notes:[
     'Internal: pull requests must bump the version and add What\'s new notes.']},
   {v:'1.1.3',notes:[
@@ -522,6 +605,15 @@ async function lbFetch(path,opts={}){
     if(!r.ok)throw new Error('HTTP '+r.status);return r}
   finally{clearTimeout(tm)}}
 const lbTop=async()=>(await lbFetch('scores?select=name,score,sprints,mode,code,version&order=score.desc,id.asc&limit=10'+(lbTab==='ver'?verFilter:''))).json();
+// Feedback box: one insert-only table (see leaderboard.sql). Hidden along with the leaderboard until LB is filled in.
+function buildFeedback(){if(!LB.url||!LB.key)return;
+  document.querySelectorAll('.fbhost').forEach(h=>{h.innerHTML=`<details class="fbform"><summary>Send feedback</summary>
+    <form><label class="sr">Feedback</label><textarea maxlength="1000" placeholder="Want to complain? Suggest a feature? Anything goes."></textarea>
+    <button class="btn alt" type="submit">Send</button><div class="eyebrow fbmsg"></div></form></details>`;
+    const f=h.querySelector('form'),ta=f.querySelector('textarea'),msg=f.querySelector('.fbmsg');
+    f.onsubmit=async e=>{e.preventDefault();const t=ta.value.trim();if(!t)return;msg.textContent='Sending…';
+      try{await lbFetch('feedback',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify({message:t.slice(0,1000),version:GAME_VERSION,code:(S.code||encodeBuild()||'').slice(0,600)})});ta.value='';msg.textContent='Thanks! Got it.'}
+      catch(_){msg.textContent='Could not send. Try again later.'}}})}
 const lbSubmit=async row=>(await lbFetch('scores',{method:'POST',headers:{Prefer:'return=minimal'},body:JSON.stringify(row)}));
 async function lbRank(score){const r=await lbFetch('scores?select=id&score=gt.'+(score|0)+(lbTab==='ver'?verFilter:''),{method:'HEAD',headers:{Prefer:'count=exact'}});
   const m=/\/(\d+)$/.exec(r.headers.get('content-range')||'');return m?+m[1]+1:null}
@@ -558,7 +650,7 @@ async function submitScore(e){
   if(!name){msg.textContent='Type a name first';inp.focus();return}
   try{localStorage.setItem('fc-name',name)}catch(e){}
   const score=Math.round(S.score);btn.disabled=true;btn.textContent='Posting…';
-  try{await lbSubmit({name,score,sprints:Math.max(1,Math.ceil(S.t/60)),picks:S.pickCount,mode:S.run==='daily'?'daily':'normal',code:(S.code||'').slice(0,400),version:GAME_VERSION});
+  try{await lbSubmit({name,score,sprints:Math.max(1,Math.ceil(S.t/60)),picks:S.pickCount,mode:S.run==='daily'?'daily':'normal',code:(S.code||'').slice(0,600),version:GAME_VERSION});
     lbPosted=true;btn.textContent='Posted';msg.textContent='Posted';
     try{const rk=await lbRank(score);if(rk)msg.textContent='Posted · #'+rk+' on the '+(lbTab==='ver'?'current version ':'')+'leaderboard'}catch(e){}}
   catch(err){btn.disabled=false;btn.textContent='Submit score';msg.textContent='Could not post your score. Check your connection and try again.'}}
@@ -571,6 +663,22 @@ renderer.shadowMap.enabled=true; renderer.shadowMap.type=T.PCFSoftShadowMap;
 const scene=new T.Scene();
 const SKY=new T.Color(0x4a35d6), NIGHT=new T.Color(0x0a0720);
 scene.background=SKY.clone(); scene.fog=new T.Fog(0x4a35d6,34,95);
+// Space skybox: stars and nebulas painted once per run seed onto an equirectangular canvas, wrapped on a sphere that follows the camera.
+const skyCan=document.createElement('canvas'),skyTex=new T.CanvasTexture(skyCan),
+  skyMat=new T.MeshBasicMaterial({map:skyTex,side:T.BackSide,fog:false,depthWrite:false}),skyMesh=new T.Mesh(new T.SphereGeometry(150,32,16),skyMat);
+skyMesh.renderOrder=-1;scene.add(skyMesh);
+function buildSky(seed){
+  let a=(seed>>>0)||1;const r=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const W=matchMedia('(pointer:coarse)').matches?1024:2048,H=W/2;skyCan.width=W;skyCan.height=H;const x=skyCan.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0a0720');g.addColorStop(.5,'#241a78');g.addColorStop(1,'#0a0720');x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.globalCompositeOperation='lighter';
+  const hues=[r()*360];hues.push((hues[0]+120+r()*80)%360);
+  for(let i=0;i<11;i++){const cx=r()*W,cy=H*(.3+r()*.55),rad=W*(.1+r()*.14),h=hues[i%2]+r()*30;
+    for(const dx of [0,-W,W]){const gr=x.createRadialGradient(cx+dx,cy,0,cx+dx,cy,rad);gr.addColorStop(0,'hsla('+h+',90%,62%,.62)');gr.addColorStop(.5,'hsla('+h+',85%,48%,.28)');gr.addColorStop(1,'hsla('+h+',80%,40%,0)');x.fillStyle=gr;x.fillRect(cx+dx-rad,cy-rad,rad*2,rad*2)}}
+  x.globalCompositeOperation='source-over';
+  for(let i=0;i<W*.5;i++){const sz=r()<.07?2.2:1,al=.35+r()*.65;x.fillStyle='rgba(255,255,255,'+al.toFixed(2)+')';x.fillRect(r()*W,r()*H,sz,sz)}
+  skyTex.needsUpdate=true}
+buildSky((Math.random()*2147483647)|0);
 const camera=new T.PerspectiveCamera(48,1,.1,220);
 const hemi=new T.HemisphereLight(0xffffff,0x6a55ff,.78); scene.add(hemi);
 const sun=new T.DirectionalLight(0xfff1d0,.85); sun.position.set(9,20,7); sun.castShadow=true;
@@ -613,12 +721,15 @@ const SHAPES={
   runway:{depth:.34,ext:1.45,pieces:[{k:'rect',x:0,z:0,hw:1.45,hl:.34}]},
   twin:{depth:.5,ext:1.12,pieces:[{k:'disc',x:-.62,z:0,r:.5},{k:'disc',x:.62,z:0,r:.5},{k:'rect',x:0,z:0,hw:.2,hl:.09}]},
   bowl:{depth:1,ext:1,pieces:[{k:'disc',x:0,z:0,r:1}],fy:r=>-2.6*(1-r*r)},
+  satellite:{depth:.3,ext:1.25,pieces:[{k:'disc',x:-.3,z:0,r:.78},{k:'disc',x:.82,z:0,r:.28}]},
   dome:{depth:1,ext:1,pieces:[{k:'disc',x:0,z:0,r:1}],fy:r=>2.2*(1-r*r)},
 };
 function pieceSd(q,u,v){const du=u-q.x,dv=v-q.z;
   if(q.k==='disc')return q.r-Math.hypot(du,dv);
   if(q.k==='rect')return Math.min(q.hw-Math.abs(du),q.hl-Math.abs(dv));
   const d=Math.hypot(du,dv);return Math.min(q.r2-d,d-q.r1)}
+const isle=[]; // Floating Island: raised drifting pads that ARENA.fy honours
+const ramps=[],lvPads=[],MEZ_H=6; // Mezzanine: slides, launch pads, and the height of the upper plate
 const ARENA={id:'disc',sh:SHAPES.disc,samples:[],
   sdU(u,v){let s=-1e9;for(const q of this.sh.pieces)s=Math.max(s,pieceSd(q,u,v));return s},
   rot:0,
@@ -627,7 +738,13 @@ const ARENA={id:'disc',sh:SHAPES.disc,samples:[],
   get depth(){return this.sh.depth*R},
   get ext(){return this.sh.ext},
   // floor height (0 except on Bowl and Dome)
-  fy(x,z){let y=0;const f=this.sh.fy;if(f)y=f(Math.min(1,Math.hypot(x,z)/R));if(ev.floodT>0)for(const q of floodPads)if(Math.hypot(x-q.x,z-q.z)<q.r)y=Math.max(y,1.2);return y},
+  // Mezzanine: one upper plate (a disc at the centre) plus slides. Bodies only stand on it if they are above it.
+  UR(){return R*.42*(stacks('mezzanine','size')?1.35:1)},
+  onUpper(x,z,m=0){return !!S.lv.mezzanine&&Math.hypot(x,z)<this.UR()-m},
+  rampAt(x,z){if(!S.lv.mezzanine)return null;for(const rp of ramps){const c=Math.cos(rp.a),s=Math.sin(rp.a),al=x*c+z*s,cr=-x*s+z*c;if(Math.abs(cr)<1.25&&al>rp.r0*R&&al<rp.r1*R)return{rp,al,c,s}}return null},
+  lvY(x,z,y){let best=-1e9;if(this.onUpper(x,z)&&y>MEZ_H-.6)best=MEZ_H;const q=this.rampAt(x,z);
+    if(q){const t=clamp((q.al-q.rp.r0*R)/((q.rp.r1-q.rp.r0)*R),0,1),h=MEZ_H*(1-t);if(y>h-.7)best=Math.max(best,h)}return best},
+  fy(x,z,yy){let y=0;const f=this.sh.fy;if(f)y=f(Math.min(1,Math.hypot(x,z)/R));if(ev.floodT>0)for(const q of floodPads)if(Math.hypot(x-q.x,z-q.z)<q.r)y=Math.max(y,1.2);for(const q of isle)if(Math.hypot(x-q.x,z-q.z)<q.r)y=Math.max(y,q.h);if(yy!==undefined&&S.lv.mezzanine){const q=this.lvY(x,z,yy);if(q>y)y=q}return y},
   // direction toward the middle of the floor (up the signed-distance gradient)
   inward(x,z){const e=.25,gx=this.sd(x+e,z)-this.sd(x-e,z),gz=this.sd(x,z+e)-this.sd(x,z-e),l=Math.hypot(gx,gz);
     if(l<1e-6){const d=Math.hypot(x,z)||1;return[-x/d,-z/d]}return[gx/l,gz/l]},
@@ -688,7 +805,7 @@ const HN=28;const crumb=new Float32Array(HN*HN);let pitList=[],holesDirty=true;
 const hcan=document.createElement('canvas');hcan.width=hcan.height=512;const hctx=hcan.getContext('2d'),htex=new T.CanvasTexture(hcan);
 const holeMesh=new T.Mesh(new T.PlaneGeometry(2,2).rotateX(-Math.PI/2),new T.MeshBasicMaterial({map:htex,transparent:true,depthWrite:false}));holeMesh.position.y=.035;world.add(holeMesh);
 const PXh=()=>R0*1.45*ARENA.ext;
-function paintedAt(x,z){const PX=R0*ARENA.ext,cw=2*PX/PN,i=Math.floor((x+PX)/cw),j=Math.floor((z+PX)/cw);return i>=0&&j>=0&&i<PN&&j<PN&&pcell[j*PN+i]>0}
+function paintedAt(x,z){const PX=PXh(),cw=2*PX/PN,i=Math.floor((x+PX)/cw),j=Math.floor((z+PX)/cw);return i>=0&&j>=0&&i<PN&&j<PN&&pcell[j*PN+i]>0}
 function cellOf(x,z){const P=PXh(),i=Math.floor((x+P)/(2*P)*HN),j=Math.floor((z+P)/(2*P)*HN);return(i<0||j<0||i>=HN||j>=HN)?-1:j*HN+i}
 function holeAt(x,z){
   if(L('crumble')){const k=cellOf(x,z);if(k>=0&&crumb[k]<-.001)return true}
@@ -766,7 +883,7 @@ const flag={mesh:new T.Group(),p:new V3(),on:false};
 {const d=new T.Mesh(GEO.disc,new T.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.55}));flag.mesh.add(d);
  const beam=new T.Mesh(GEO.cyl,new T.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.5}));beam.scale.set(.1,7,.1);beam.position.y=3.5;flag.mesh.add(beam);flag.mesh.visible=false;world.add(flag.mesh)}
 let mines=[],bombs=[];
-const PN=14,pcell=new Float32Array(PN*PN),pcan=document.createElement('canvas');pcan.width=pcan.height=PN*16;
+const PN=20,pcell=new Float32Array(PN*PN),pcan=document.createElement('canvas');pcan.width=pcan.height=PN*16;
 const pctx=pcan.getContext('2d'),ptex=new T.CanvasTexture(pcan);let pdirty=false;
 const paintMesh=new T.Mesh(new T.PlaneGeometry(2,2).rotateX(-Math.PI/2),new T.MeshBasicMaterial({map:ptex,transparent:true,opacity:.75,depthWrite:false}));paintMesh.scale.setScalar(R0);paintMesh.position.y=.025;paintMesh.visible=false;world.add(paintMesh);
 const hookLine=new T.Line(new T.BufferGeometry().setFromPoints([new V3(),new V3(0,1,0)]),new T.LineBasicMaterial({color:0xfff8e8}));hookLine.visible=false;hookLine.frustumCulled=false;world.add(hookLine);
@@ -778,11 +895,19 @@ ARENA.set('disc');
 
 function clearList(a){a.forEach(o=>world.remove(o.mesh||o));a.length=0}
 function clearEntities(){
+  isle.length=0;buildIsle();clearWalls();clearSimon();zone.on=false;kataReset();
   bodies.forEach(b=>{if(b!==player)world.remove(b.mesh)}); bodies=[player];
   [orbs,shots,bullets,mines,bombs].forEach(clearList);clearStatics();
   meteors.forEach(m=>{world.remove(m.ring);world.remove(m.rock)}); meteors.length=0;
   while(laserPivot.children.length)laserPivot.remove(laserPivot.children[0]);
 }
+// Stage change: warn, shrink the plate, rebuild it as the new shape, grow it back. morphK() scales the plate radius.
+function morphTo(id,tele=1.5){if(ARENA.id===id&&!ev.morph)return;ev.morph={to:id,t:-tele,done:false};if(tele>0)snd(300,.5,'sine',.07,500)}
+function morphK(dt){const m=ev.morph;if(!m)return 1;m.t+=dt;
+  if(m.t<0){plateGlow(.5+.5*Math.sin(S.t*14));return 1}
+  const e=x=>x*x*(3-2*x);let k;
+  if(m.t<.6)k=1-.25*e(m.t/.6);else{if(!m.done){m.done=true;ARENA.set(m.to);shake=Math.max(shake,.4);snd(120,.3,'square',.07,-60)}k=.75+.25*e(Math.min(1,(m.t-.6)/.6))}
+  if(m.t>=1.2){ev.morph=null;plateGlow(0)}return k}
 function spot(maxF=.75,avoid=3){return ARENA.rand(maxF,avoid)}
 
 function spawnChaser(){const sz=mv('chasers','size'),g=new T.Group(),b=new T.Mesh(GEO.box,gm('chasers',MAT.chaser));b.scale.setScalar(1.05);g.add(b);
@@ -794,7 +919,7 @@ function spawnDummy(){const g=new T.Group(),b=new T.Mesh(GEO.cyl,gm('sumo',MAT.p
 function spawnOrb(){const s=mv('orbs','size'),m=new T.Mesh(GEO.ico,gm('orbs',MAT.orb));m.scale.setScalar(s);const[x,z]=spot(.85,1.5);m.position.set(x,.75,z);world.add(m);orbs.push({mesh:m,p:m.position,s,id:'orbs',pts:PAY.orbs})}
 function spawnCoin(){const s=mv('gold','size'),m=new T.Mesh(GEO.cyl,MAT.coin);m.scale.set(.34*s,.08,.34*s);m.rotation.x=Math.PI/2;const[x,z]=spot(.85,0);m.position.set(x,.75,z);world.add(m);
   orbs.push({mesh:m,p:m.position,s,id:'gold',pts:PAY.gold,life:L('jackpot')?11:5.5});burst(m.position,0xffd23f,2)}
-function spawnHeart(){const m=new T.Mesh(GEO.sphere,MAT.shot);m.scale.setScalar(.4);const[x,z]=spot(.7,2);m.position.set(x,.75,z);world.add(m);orbs.push({mesh:m,p:m.position,s:1.3,id:'heart',pts:0,life:9});burst(m.position,0xff3d77,6)}
+function spawnHeart(life=9){const m=new T.Mesh(GEO.sphere,MAT.shot);m.scale.setScalar(.4);const[x,z]=spot(.7,2);m.position.set(x,.75,z);world.add(m);orbs.push({mesh:m,p:m.position,s:1.3,id:'heart',pts:0,life});burst(m.position,0xff3d77,6)}
 function spawnRunner(){const g=new T.Group(),b=new T.Mesh(GEO.cyl,MAT.coin);b.scale.set(.4,1,.4);g.add(b);const hd=new T.Mesh(GEO.sphere,MAT.coin);hd.scale.setScalar(.36);hd.position.y=.78;g.add(hd);
   const d=mkBody('runner',g,.55,.8);const[x,z]=spot(.7,5);d.p.set(x,rand(4,6),z);return d}
 function spawnBall(){const m=new T.Mesh(GEO.sphere,MAT.beach);m.scale.setScalar(.7);const st=new T.Mesh(GEO.sphere,MAT.pin);st.scale.set(1.02,.3,1.02);m.add(st);
@@ -803,7 +928,8 @@ function spawnCrate(){const m=new T.Mesh(GEO.box,MAT.crate);m.scale.setScalar(.9
 function spawnBoss(){const g=new T.Group(),b=new T.Mesh(GEO.box,MAT.iron);g.add(b);
   for(const s of[-1,1]){const e=new T.Mesh(GEO.box,MAT.shot);e.scale.set(.2,.12,.1);e.position.set(.22*s,.18,.51);g.add(e)}
   const crown=new T.Mesh(GEO.cone,MAT.coin);crown.scale.set(.8,.4,.8);crown.position.y=.7;g.add(crown);g.scale.setScalar(3);
-  const c=mkBody('boss',g,1.7,7);const[bx,bz]=spot(.6,5);c.p.set(bx,12,bz);return c}
+  const v=['tracker','charger','heavy'][(S.bossN-1)%3],hv=v==='heavy';if(hv)g.scale.setScalar(3.5);
+  const c=mkBody('boss',g,hv?2:1.7,hv?16:9);c.var=v;c.chg=2;const[bx,bz]=spot(.6,5);c.p.set(bx,12,bz);return c}
 function spawnStampede(){
   const n=Math.round(4*mv('stampede','count')),sz=mv('stampede','size'),sp=11*mv('stampede','speed'),a=rand(0,6.283),dx=Math.cos(a),dz=Math.sin(a),gap=Math.min(2.5*sz,(R*ARENA.ext*1.5)/n);
   for(let i=0;i<n;i++){const o=(i-(n-1)/2)*gap,al=-Math.sqrt(Math.max(0,(R*ARENA.ext)**2*.8-o*o));
@@ -813,14 +939,16 @@ function spawnStampede(){
 }
 
 function clearStatics(){
+  ramps.length=0;lvPads.length=0;while(mezG.children.length)mezG.remove(mezG.children[0]);
   [turrets,bumpers,wreck].forEach(clearList);
   while(laserPivot.children.length)laserPivot.remove(laserPivot.children[0]);
 }
 // Rebuild the scenery that depends on which cards you own. Bodies, pickups and timers keep running,
 // so a card taken mid-run changes the game in place.
 function applyStatics(){
-  clearStatics();
-  {const sc=S.picks.map(id=>byId[id]).find(c=>c.slot==='shape');ARENA.set(sc?sc.shape:'disc')}
+  clearStatics();if(!L('katamari'))kataReset();
+  {const sc=S.picks.map(id=>byId[id]).find(c=>c.slot==='shape'),id=sc?sc.shape:'disc';if(S.t>0&&ARENA.id!==id&&!(ev.swapT>0))morphTo(id,0);else if(!ev.morph&&!(ev.swapT>0))ARENA.set(id)}
+  buildMezz();
   const nt=L('turrets')?Math.round(2*mv('turrets','count')):0, off=rand(0,6.28);
   for(let i=0;i<nt;i++){const g=new T.Group(),base=new T.Mesh(GEO.cyl,MAT.turret);base.scale.set(.5,1.6,.5);g.add(base);
     const head=new T.Mesh(GEO.cone,MAT.shot);head.position.y=1.1;g.add(head);world.add(shadowed(g));
@@ -855,7 +983,7 @@ function resetRunState(){
   Object.assign(ev,{flipPending:false,flipT:0,stampT:-1,shrinkCycle:0,shrinkStart:0,gustT:0,mirrorT:0,lavaT:0,pinT:-9,pinStreak:0,bossT:3,bossI:0});
   S.lastFall=-1;S.lastScore=-9;S.streak=0;lapMk.visible=false;bankMk.visible=false;
   crumb.fill(0);pitList=[];tw.t=0;tw.mesh.visible=false;water.visible=false;floodPads=[];buildPads();boltMk.visible=false;ARENA.rot=0;plate.rotation.y=0;
-  Object.assign(ev,{quakeT:0,floodT:0,floodPeaked:false,swapT:0,tvx:0,tvz:0,wobOn:0});
+  Object.assign(ev,{quakeT:0,floodT:0,floodPeaked:false,swapT:0,otT:undefined,morph:null,tvx:0,tvz:0,wobOn:0});
   removePickups();applyStatics();
 }
 
@@ -892,6 +1020,9 @@ function draftProgress(){
   if(L('headhunt'))return S.koSince/(4*draftNeed());
   if(L('lap'))return S.lapN/(4*draftNeed());
   if(L('clean'))return S.cleanT/(15*draftNeed());
+  if(L('sprint'))return(S.earned-S.pickBase)/(200*(S.picks.length/5+1)*draftNeed());
+  if(L('scars'))return(S.hitsSince||0)/(3*draftNeed());
+  if(L('chain'))return(S.t-S.chainLast<2?S.chainN:0)/(12*draftNeed());
   return 1-timers.pick/(PICK_EVERY*draftNeed());
 }
 function spawnPickup(){
@@ -937,6 +1068,50 @@ const lapMk=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0xfff8e8}));lapMk
 function lapUpdate(){if(!lapMk.visible){const[x,z]=spot(.8,6);lapMk.position.set(x,.06+ARENA.fy(x,z),z);lapMk.visible=true}
   lapMk.rotation.y+=.05;if(Math.hypot(player.p.x-lapMk.position.x,player.p.z-lapMk.position.z)<1.6&&player.p.y<3){S.lapN++;lapMk.visible=false;snd(660+S.lapN*110,.1,'triangle',.06);ringFx(lapMk.position.x,lapMk.position.z,1.6,0xfff8e8)}}
 
+/* ---------- 1.4 prompts and rules: island, walls, Simon, bonus disk, katamari ---------- */
+const islG=new T.Group();world.add(islG);
+function buildIsle(){while(islG.children.length)islG.remove(islG.children[0]);for(const q of isle){const m=new T.Mesh(GEO.cyl,MAT.bumper);m.scale.set(q.r,q.h,q.r);m.position.set(q.x,q.h/2,q.z);m.castShadow=true;q.mesh=m;islG.add(m)}}
+const walls=[],wallG=new T.Group();world.add(wallG);
+function clearWalls(){walls.length=0;while(wallG.children.length)wallG.remove(wallG.children[0])}
+const simonG=new T.Group();world.add(simonG);const SIMON_COL=[0xff3d77,0x3df0c2,0xffd23f,0x8a4dff],SIMON_NOTE=[262,330,392,523];
+function clearSimon(){ev.simon=null;while(simonG.children.length)simonG.remove(simonG.children[0])}
+const zone={p:new V3(),on:false,r:1.8},zoneMk=new T.Mesh(GEO.disc,new T.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.3}));zoneMk.scale.setScalar(zone.r);zoneMk.position.y=.035;zoneMk.visible=false;world.add(zoneMk);
+const zoneRing=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0xffd23f}));zoneRing.position.y=.01;zoneMk.add(zoneRing);
+const inZone=()=>L('bonusdisk')&&zone.on&&Math.hypot(player.p.x-zone.p.x,player.p.z-zone.p.z)<zone.r&&player.p.y<3;
+// Katamari: bodies that touch you stick to the ball; size drives radius, score and camera.
+const kata={n:0,stuck:[]};
+const kataSize=()=>L('katamari')?Math.min(2.2,1+.06*kata.n):1;
+function kataReset(){for(const m of kata.stuck)player.ball.remove(m);kata.stuck.length=0;kata.n=0}
+function kataShed(){if(!kata.stuck.length)return;const k=Math.ceil(kata.stuck.length*.3);
+  for(let i=0;i<k;i++){const m=kata.stuck.pop();if(m){tmp.setFromMatrixPosition(m.matrixWorld);player.ball.remove(m);burst(tmp,0xffffff,4)}}
+  kata.n=Math.floor(kata.n*.7);banner('Shed!')}
+function kataUpdate(){
+  const sz=kataSize();player.r=.6*sz;player.m=sz;player.mesh.scale.setScalar(player.r);
+  for(const b of bodies){if(b===player||b.dead||!(b.kind==='crate'||b.kind==='runner'||b.kind==='dummy'||b.kind==='ball'))continue;
+    if(Math.hypot(b.p.x-player.p.x,b.p.y-player.p.y,b.p.z-player.p.z)>player.r+b.r+.15)continue;
+    b.dead=true;world.remove(b.mesh);const m=b.mesh;kata.stuck.push(m);player.ball.add(m);
+    tmp.set(rand(-1,1),rand(-1,1),rand(-1,1)).normalize();m.position.copy(tmp).multiplyScalar(1.05);m.scale.setScalar(.4);m.rotation.set(rand(0,6),rand(0,6),rand(0,6));
+    kata.n++;add(PAY.katamari*sz,'katamari',player.p.clone());snd(520+Math.min(kata.n,20)*20,.06,'triangle',.05,200)}}
+// Mezzanine meshes live in mezG, built from fractions of the plate radius and scaled with the plate each frame.
+const mezG=new T.Group();world.add(mezG);
+function buildMezz(){
+  if(!L('mezzanine'))return;const urf=.42*(stacks('mezzanine','size')?1.35:1),a0=.6;
+  const top=new T.Mesh(GEO.cyl,new T.MeshLambertMaterial({color:0x8f7bff,transparent:true,opacity:.55,depthWrite:false}));top.scale.set(urf*R0,.5,urf*R0);top.position.y=MEZ_H-.25;mezG.add(top);
+  const rim=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0xffd23f,side:T.DoubleSide}));rim.scale.setScalar(urf*R0);rim.position.y=MEZ_H+.02;mezG.add(rim);
+  for(let i=0;i<2;i++){const a=a0+i*Math.PI,c=Math.cos(a),sn=Math.sin(a);let r1=.9;while(r1>.55&&!ARENA.on(c*r1*R0,sn*r1*R0,1.5))r1-=.1;
+    const r0=urf-.02;ramps.push({a,r0,r1});const len=(r1-r0)*R0,g=new T.Group(),m=new T.Mesh(GEO.box,new T.MeshLambertMaterial({color:0xffd23f}));
+    m.scale.set(Math.hypot(len,MEZ_H),.2,2.4);m.rotation.z=-Math.atan2(MEZ_H,len);m.position.y=MEZ_H/2;g.add(m);g.rotation.y=-a;g.position.set(c*(r0+r1)/2*R0,0,sn*(r0+r1)/2*R0);mezG.add(g)}
+  for(let i=0;i<2;i++){const a=a0+Math.PI/2+i*Math.PI,c=Math.cos(a),sn=Math.sin(a);let f=.72;while(f>.5&&!ARENA.on(c*f*R0,sn*f*R0,1.5))f-=.1;
+    const pd={fx:c*f,fz:sn*f,dx:c*.28,dz:sn*.28,cd:0};lvPads.push(pd);
+    const m=new T.Mesh(GEO.cyl,new T.MeshBasicMaterial({color:0x3df0c2}));m.scale.set(1.1,.1,1.1);m.position.set(pd.fx*R0,.06,pd.fz*R0);mezG.add(m);
+    const ar=new T.Mesh(GEO.cone,new T.MeshBasicMaterial({color:0xffffff}));ar.scale.set(.8,.9,.8);ar.position.set(pd.fx*R0,.6,pd.fz*R0);mezG.add(ar)}}
+function mezUpdate(dt,g){
+  const pr=1.1*R/R0;
+  for(const pd of lvPads){pd.cd-=dt;if(pd.cd>0)continue;const px=pd.fx*R,pz=pd.fz*R;
+    for(const b of bodies){if(b.dead||!b.g||b.p.y>2.2||b.kind==='boulder'||b.kind==='boss'||Math.hypot(b.p.x-px,b.p.z-pz)>pr)continue;
+      const T2=1.3;b.v.set((pd.dx*R-b.p.x)/T2,(MEZ_H+b.r-b.p.y+.5*g*(b.gs||1)*T2*T2)/T2,(pd.dz*R-b.p.z)/T2);b.g=false;pd.cd=1.2;
+      ringFx(px,pz,1.6,0x3df0c2);snd(500,.25,'sine',.07,700);if(b===player)add(15,'mezzanine',player.p.clone())}}
+  if(player.g&&player.p.y>MEZ_H-.3&&ARENA.onUpper(player.p.x,player.p.z)){timers.up=(timers.up||0)+dt;if(timers.up>=.5){timers.up=0;add(PAY.mezzanine,'mezzanine',null)}}}
 /* ---------- fx ---------- */
 let shake=0;
 function ringFx(x,z,rad,color=0xffffff){const m=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color,transparent:true,side:T.DoubleSide}));
@@ -966,12 +1141,13 @@ let AC=null,muted=false,sfxG=null,musG=null,noiseBuf=null;
 function audioInit(){if(AC)return;try{AC=new (window.AudioContext||window.webkitAudioContext)();sfxG=AC.createGain();sfxG.connect(AC.destination);
   musG=AC.createGain();musG.gain.value=.4;musG.connect(AC.destination);
   noiseBuf=AC.createBuffer(1,AC.sampleRate,AC.sampleRate);const d=noiseBuf.getChannelData(0);for(let i=0;i<d.length;i++)d[i]=Math.random()*2-1}catch(e){AC=null}}
-let voices=0;const VMAX=24;
-function tone(dest,t,f,d,type,vol,slide,attack){if(voices>=VMAX)return;voices++;setTimeout(()=>voices--,(d+.05+Math.max(0,t-(AC?AC.currentTime:0)))*1000);try{const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);
+// SFX and music get separate voice budgets, so a flood of sound effects can no longer starve the music (or itself fall silent).
+const voices={s:0,m:0},VMAX={s:20,m:16};
+function tone(dest,t,f,d,type,vol,slide,attack){const vk=dest===sfxG?'s':'m';if(voices[vk]>=VMAX[vk])return;voices[vk]++;setTimeout(()=>voices[vk]--,(d+.05+Math.max(0,t-(AC?AC.currentTime:0)))*1000);try{const o=AC.createOscillator(),g=AC.createGain();o.type=type;o.frequency.setValueAtTime(f,t);
   if(slide)o.frequency.exponentialRampToValueAtTime(Math.max(30,f+slide),t+d);
   if(attack){g.gain.setValueAtTime(.0001,t);g.gain.linearRampToValueAtTime(vol,t+attack)}else g.gain.setValueAtTime(vol,t);
   g.gain.exponentialRampToValueAtTime(.0001,t+d);o.connect(g);g.connect(dest);o.start(t);o.stop(t+d+.02)}catch(e){}}
-function hiss(dest,t,d,vol,ftype,freq,to){if(voices>=VMAX)return;voices++;setTimeout(()=>voices--,(d+.05+Math.max(0,t-(AC?AC.currentTime:0)))*1000);try{const s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();s.buffer=noiseBuf;s.loop=true;
+function hiss(dest,t,d,vol,ftype,freq,to){const vk=dest===sfxG?'s':'m';if(voices[vk]>=VMAX[vk])return;voices[vk]++;setTimeout(()=>voices[vk]--,(d+.05+Math.max(0,t-(AC?AC.currentTime:0)))*1000);try{const s=AC.createBufferSource(),fl=AC.createBiquadFilter(),g=AC.createGain();s.buffer=noiseBuf;s.loop=true;
   fl.type=ftype;fl.frequency.setValueAtTime(freq,t);if(to)fl.frequency.exponentialRampToValueAtTime(to,t+d);
   g.gain.setValueAtTime(vol,t);g.gain.exponentialRampToValueAtTime(.0001,t+d);s.connect(fl);fl.connect(g);g.connect(dest);s.start(t,Math.random()*.5);s.stop(t+d+.02)}catch(e){}}
 function snd(f,d=.08,type='square',vol=.05,slide=0,delay=0){if(!AC||muted)return;tone(sfxG,AC.currentTime+delay,f,d,type,vol,slide)}
@@ -1006,10 +1182,14 @@ function music(){
 }
 
 /* ---------- scoring: rules earn income, prompts pay bounties, modifiers multiply their host ---------- */
-function add(n,id,p,k=1){let v=n*payMul(id)*k;const bounty=byId[id].type==='prompt';
+function add(n,id,p,k=1){let v=n*payMul(id)*k;
+  if(stacks(id,'lucky')&&Math.random()<.25*stacks(id,'lucky'))v*=3;
+  S.chainN=S.t-S.chainLast<2?(S.chainN||0)+1:1;S.chainLast=S.t;const bounty=byId[id].type==='prompt';
+  if(REROLL_EVERY[id]&&p&&(S.rrN[id]=(S.rrN[id]||0)+1)>=REROLL_EVERY[id]){S.rrN[id]=0;S.reroll++;floater('+1 reroll',p.clone?p.clone():player.p.clone(),false,true)}
   if(!bounty&&L('greed')&&ARENA.band(player.p.x,player.p.z))v*=2;
+  if(!bounty&&inZone())v*=2;
   if(!bounty&&L('momentum'))v*=1+Math.min(L('openroad')?2:1,Math.hypot(player.v.x,player.v.z)/12);
-  if(bounty&&L('hunter')&&++S.hunt>=12&&S.t-(S.healT||-99)>=8){S.hunt=0;S.healT=S.t;if(S.hearts<maxH()){S.hearts++;snd(520,.25,'triangle',.07,520);burst(player.p,0xff3d77,8)}}
+  if(bounty&&L('hunter')&&++S.hunt>=12&&S.t-(S.healT||-99)>=8){S.hunt=0;S.healT=S.t;if(S.hearts<maxH())spawnHeart(14)}
   if(L('combo')){S.streak=S.t-S.lastScore<2?Math.min(L('gambler')?20:10,S.streak+1):0;S.lastScore=S.t;v*=1+.1*S.streak}
   S.earned+=v;S.by[id]=(S.by[id]||0)+v;S[bounty?'bounty':'income']+=v;
   if(L('bank'))S.unbanked+=v;else S.score+=v;
@@ -1023,6 +1203,7 @@ function smash(b){if(b.dead)return;b.dead=true;world.remove(b.mesh);burst(b.p,0x
 /* ---------- damage ---------- */
 // One place for everything that happens when you lose a heart.
 function loseHeart(){
+  S.hitsSince=(S.hitsSince||0)+1;S.hitN=(S.hitN||0)+1;if(L('katamari'))kataShed();
   S.cleanT=0;
   if(L('countdown')){S.clock-=8;floater('-8 s',player.p.clone(),true)}else S.hearts--;
   if(L('bank')&&S.unbanked>0){floater('Dropped '+fmt(S.unbanked),player.p.clone(),true);S.unbanked=0}
@@ -1058,12 +1239,25 @@ addEventListener('keydown',e=>{
 addEventListener('keyup',e=>{keys[e.code]=false});
 addEventListener('blur',()=>{for(const k in keys)keys[k]=false});
 const coarse=matchMedia('(pointer:coarse)').matches;
-canvas.addEventListener('pointerdown',e=>{if(S.phase!=='play'||stick.id!==null)return;stick.id=e.pointerId;stick.ox=e.clientX;stick.oy=e.clientY;
+// Opt-in tilt steering. iOS asks for permission, so it starts from a tap. Neutral is a phone held at about 45 degrees.
+const tilt={on:false,x:0,y:0};
+try{tilt.want=localStorage.getItem('fc-tilt')==='1'}catch(_){}
+function tiltLabel(){$('tiltbtn').textContent='TILT: '+(tilt.on?'ON':'OFF')}
+function tiltHandler(e){if(e.gamma==null||e.beta==null)return;tilt.x=clamp(e.gamma/22,-1,1);tilt.y=clamp(-(e.beta-45)/22,-1,1);if(Math.abs(tilt.x)<.12)tilt.x=0;if(Math.abs(tilt.y)<.12)tilt.y=0}
+async function setTilt(on){
+  if(on){try{if(typeof DeviceOrientationEvent!=='undefined'&&typeof DeviceOrientationEvent.requestPermission==='function'&&await DeviceOrientationEvent.requestPermission()!=='granted')on=false}catch(_){on=false}}
+  if(on&&!tilt.listen){addEventListener('deviceorientation',tiltHandler);tilt.listen=true}
+  tilt.on=on;if(!on)tilt.x=tilt.y=0;tiltLabel();try{localStorage.setItem('fc-tilt',on?'1':'0')}catch(_){}}
+if(coarse&&'DeviceOrientationEvent' in window){$('tiltbtn').hidden=false;$('tiltbtn').onclick=()=>setTilt(!tilt.on);tiltLabel();
+  if(tilt.want&&typeof DeviceOrientationEvent.requestPermission!=='function')setTilt(true)}
+canvas.addEventListener('pointerdown',e=>{if(S.phase!=='play')return;if(stick.id!==null){if(e.pointerType==='touch')jumpQ=true;return} // a second finger jumps
+  stick.id=e.pointerId;stick.ox=e.clientX;stick.oy=e.clientY;stick.t0=performance.now();stick.maxd=0;
   const sb=$('stickbase'),r=stage.getBoundingClientRect();sb.hidden=false;sb.style.left=(e.clientX-r.left)+'px';sb.style.top=(e.clientY-r.top)+'px';
   $('touch').hidden=false;try{canvas.setPointerCapture(e.pointerId)}catch(_){}});
 canvas.addEventListener('pointermove',e=>{if(e.pointerId!==stick.id)return;let dx=(e.clientX-stick.ox)/50,dy=(e.clientY-stick.oy)/50;const d=Math.hypot(dx,dy);
-  if(d>1){dx/=d;dy/=d}stick.x=dx;stick.y=-dy;$('stickknob').style.transform=`translate(${dx*40}px,${dy*40}px)`});
-const endStick=e=>{if(e.pointerId!==stick.id)return;stick.id=null;stick.x=stick.y=0;$('stickbase').hidden=true;$('stickknob').style.transform=''};
+  stick.maxd=Math.max(stick.maxd||0,d);if(d>1){dx/=d;dy/=d}stick.x=dx;stick.y=-dy;$('stickknob').style.transform=`translate(${dx*40}px,${dy*40}px)`});
+const endStick=e=>{if(e.pointerId!==stick.id)return;if(e.type==='pointerup'&&e.pointerType==='touch'&&performance.now()-stick.t0<240&&(stick.maxd||0)<.3)jumpQ=true; // quick tap anywhere jumps
+  stick.id=null;stick.x=stick.y=0;$('stickbase').hidden=true;$('stickknob').style.transform=''};
 canvas.addEventListener('pointerup',endStick);canvas.addEventListener('pointercancel',endStick);
 addEventListener('pointerup',()=>{jumpHeld=false});
 $('tbtns').addEventListener('pointerdown',e=>{const b=e.target.closest('.tbtn');if(!b)return;e.preventDefault();if(b.dataset.a==='jump'){jumpQ=true;jumpHeld=true}else actQ[b.dataset.a]=true});
@@ -1078,13 +1272,21 @@ function emit(evt){if(evt==='ko')S.koSince++;for(const id in S.trig){if(S.trig[i
   if(trigCount[id]>=trigN(id)&&S.t-(trigLast[id]===undefined?-9:trigLast[id])>1.2){trigCount[id]=0;trigLast[id]=S.t;fireQ.push(id)}}}
 const PERIOD={chasers:()=>6.5,meteors:()=>2.4/mv('meteors','count'),flip:()=>7/mv('flip','speed'),gold:()=>8/mv('gold','speed'),stampede:()=>8/mv('stampede','speed'),
   gust:()=>8/mv('gust','speed'),mirror:()=>10/mv('mirror','speed'),lava:()=>8/mv('lava','speed'),mines:()=>7/mv('mines','speed'),turrets:()=>3.2/mv('turrets','speed'),
-  quake:()=>14/mv('quake','speed'),tornado:()=>13/mv('tornado','speed'),flood:()=>15/mv('flood','speed'),swap:()=>14/mv('swap','speed'),pits:()=>5/mv('pits','speed')};
-const FIRST={quake:6,tornado:5,flood:6,swap:6,pits:3,chasers:1.5,meteors:1.5,flip:5,gold:2.5,stampede:4,gust:5,mirror:6,lava:5,mines:3,turrets:1.5};
+  quake:()=>14/mv('quake','speed'),tornado:()=>13/mv('tornado','speed'),flood:()=>15/mv('flood','speed'),swap:()=>35/mv('swap','speed'),floatisland:()=>22/mv('floatisland','speed'),walls:()=>24/mv('walls','speed'),simon:()=>26/mv('simon','speed'),pits:()=>5/mv('pits','speed')};
+const FIRST={quake:6,tornado:5,flood:6,swap:15,floatisland:8,walls:10,simon:12,pits:3,chasers:1.5,meteors:1.5,flip:5,gold:2.5,stampede:4,gust:5,mirror:6,lava:5,mines:3,turrets:1.5};
 const FIRE={
- quake(){if(ev.quakeT>0)return;ev.quakeT=4;ev.quakeStart=S.t;ev.quakeA=rand(0,6.283);banner('Earthquake!');shake=1;nz(1.2,.3,'lowpass',180,60);holesDirty=true},
- tornado(){const[x,z]=spot(.6,6);tw.p.set(x,0,z);tw.t=6;tw.start=S.t;const a=rand(0,6.283);tw.v.set(Math.cos(a)*2.5,0,Math.sin(a)*2.5);tw.mesh.visible=true;banner('Tornado!');nz(2,.12,'bandpass',500,1200)},
- flood(){if(ev.floodT>0)return;ev.floodT=6;ev.floodStart=S.t;floodPads=[];for(let i=0;i<4;i++){const[x,z]=spot(.7,0);floodPads.push({x,z,r:1.6})}buildPads();banner('Flood!');nz(1.5,.15,'lowpass',400,200)},
- swap(){if(ev.swapT>0)return;const others=Object.keys(SHAPES).filter(k=>k!==ARENA.id&&!SHAPES[k].fy);ev.swapBack=ARENA.id;ev.swapT=5;ev.swapStart=S.t;ARENA.set(others[Math.floor(Math.random()*others.length)]);banner('Arena swap!');snd(300,.4,'sine',.08,600)},
+ quake(){if(ev.quakeT>0)return;ev.quakeT=4*mv('quake','long');ev.quakeStart=S.t;ev.quakeA=rand(0,6.283);banner('Earthquake!');shake=1;nz(1.2,.3,'lowpass',180,60);holesDirty=true},
+ tornado(){const[x,z]=spot(.6,6);tw.p.set(x,0,z);tw.t=6*mv('tornado','long');tw.start=S.t;const a=rand(0,6.283);tw.v.set(Math.cos(a)*2.5,0,Math.sin(a)*2.5);tw.mesh.visible=true;banner('Tornado!');nz(2,.12,'bandpass',500,1200)},
+ flood(){if(ev.floodT>0)return;ev.floodT=6;ev.floodStart=S.t;floodPads=[];for(let i=0;i<4;i++){const[x,z]=spot(.7,0);floodPads.push({x,z,r:1.6})}buildPads();banner('Flood!');if(L('tidalwave'))FIRE.gust();nz(1.5,.15,'lowpass',400,200)},
+ floatisland(){if(isle.length)return;const[x,z]=spot(.6,3),a=rand(0,6.283);isle.push({x,z,r:2.2*mv('floatisland','size'),h:1.2,t:8,vx:Math.cos(a)*.9,vz:Math.sin(a)*.9,on:0,paid:false});buildIsle();banner('Island!');snd(400,.3,'sine',.07,300)},
+ walls(){if(walls.length)return;const n=Math.round(3*mv('walls','count'));ev.wallStart=S.t;ev.wallHit=S.hitN||0;
+  for(let i=0;i<n;i++){const[x,z]=spot(.7,3),yaw=rand(0,3.14),c=Math.cos(yaw),sn=Math.sin(yaw);let len=rand(4,7);while(len>2&&!(ARENA.on(x+c*len/2,z+sn*len/2,1)&&ARENA.on(x-c*len/2,z-sn*len/2,1)))len-=.5;
+   const m=new T.Mesh(GEO.box,MAT.iron);m.castShadow=true;m.rotation.y=-yaw;m.scale.set(len,.05,.6);m.position.set(x,.03,z);wallG.add(m);walls.push({x,z,yaw,len,t:-1.2,life:8,mesh:m})}
+  banner('Walls incoming!');snd(120,.5,'sawtooth',.07,-40)},
+ simon(){if(ev.simon)return;const N=Math.min(8,3+Math.floor(S.t/90)+stacks('simon','count')),d=.55*R*ARENA.ext,seq=[];for(let i=0;i<N;i++)seq.push(Math.floor(Math.random()*4));
+  const pads=[];for(let k=0;k<4;k++){const a=k*Math.PI/2,[x,z]=ARENA.nearest(Math.cos(a)*d,Math.sin(a)*d,1.6),m=new T.Mesh(GEO.disc,new T.MeshBasicMaterial({color:SIMON_COL[k],transparent:true,opacity:.3}));m.scale.setScalar(1.2);m.position.set(x,.04+ARENA.fy(x,z),z);simonG.add(m);pads.push({x,z,m})}
+  ev.simon={phase:'show',seq,idx:0,t:-.8,pads,cur:-1,start:S.t,ok:false,speed:mv('simon','speed')};banner('Simon says…');snd(300,.2,'sine',.06,200)},
+ swap(){if(ev.swapT>0)return;const others=Object.keys(SHAPES).filter(k=>k!==ARENA.id&&!SHAPES[k].fy);ev.swapBack=ARENA.id;ev.swapT=5*mv('swap','long')+1.5+1.2;ev.swapStart=S.t;morphTo(others[Math.floor(Math.random()*others.length)],1.5);banner('Arena swap incoming…');snd(300,.4,'sine',.08,600)},
  pits(){const n=Math.round(2*mv('pits','count')),r=1.3*mv('pits','size');for(let i=0;i<n;i++){let x=player.p.x+(i?rand(-4,4):0),z=player.p.z+(i?rand(-4,4):0);
    pitList.push({x,z,r,warn:1.1,open:3.2,hit:false});}holesDirty=true;snd(500,.3,'square',.04,-300)},
  chasers(){const n=Math.round(2*mv('chasers','count')),cap=10*mv('chasers','count');for(let i=0;i<n&&bodies.filter(b=>b.kind==='chaser').length<cap;i++)spawnChaser();snd(98,.14,'square',.07);snd(82,.22,'square',.07,0,.16)},
@@ -1096,8 +1298,8 @@ const FIRE={
    ev.flipPending=true;ev.flipT=S.t},
  gold(){banner('Gold rush');snd(1319,.08,'triangle',.06);snd(1568,.08,'triangle',.06,0,.08);snd(2093,.16,'triangle',.06,0,.16);for(let i=0,n=Math.round(8*mv('gold','count'));i<n;i++)spawnCoin()},
  stampede(){spawnStampede()},
- gust(){if(ev.gustT>0)return;ev.gustT=2.5;ev.gustStart=S.t;const a=rand(0,6.283);ev.gx=Math.cos(a);ev.gz=Math.sin(a);banner('Gust!');nz(2.5,.14,'bandpass',350,1800)},
- mirror(){if(ev.mirrorT>0)return;ev.mirrorT=3;ev.mirrorStart=S.t;banner('Mirror!');snd(880,.09,'sine',.08);snd(440,.09,'sine',.08,0,.1);snd(880,.14,'sine',.08,0,.2);canvas.style.filter='hue-rotate(150deg)'},
+ gust(){if(ev.gustT>0)return;ev.gustT=2.5*mv('gust','long');ev.gustStart=S.t;const a=rand(0,6.283);ev.gx=Math.cos(a);ev.gz=Math.sin(a);banner('Gust!');nz(2.5,.14,'bandpass',350,1800)},
+ mirror(){if(ev.mirrorT>0)return;ev.mirrorT=3*mv('mirror','long');ev.mirrorStart=S.t;banner('Mirror!');snd(880,.09,'sine',.08);snd(440,.09,'sine',.08,0,.1);snd(880,.14,'sine',.08,0,.2);canvas.style.filter='hue-rotate(150deg)'},
  lava(){if(ev.lavaT>0)return;ev.lavaT=1.4;banner('Jump!');snd(300,1.3,'sawtooth',.04,900)},
  mines(){for(let i=0;i<3;i++)snd(1000,.04,'square',.04,0,i*.1);
    for(let i=0,n=Math.round(5*mv('mines','count'));i<n;i++){const[x,z]=spot(.85,2.5),m=new T.Mesh(GEO.sphere,gm('mines',MAT.mine));m.scale.set(.45,.25,.45);m.position.set(x,.2,z);
@@ -1122,7 +1324,7 @@ function edgeRule(b,dt){
 function flashBolt(){const f=$('flash');f.style.background='rgba(255,248,232,.9)';f.classList.remove('go');void f.offsetWidth;f.classList.add('go');setTimeout(()=>f.style.background='',500);nz(.5,.35,'highpass',800);snd(60,.5,'sawtooth',.12,-30)}
 
 /* ---------- active verbs ---------- */
-function doGrapple(){const f=mv('grapple','force');cdmax.grapple=cds.grapple=2.5/mv('grapple','speed');snd(500,.15,'square',.05,700);
+function doGrapple(){const f=mv('grapple','force');cdmax.grapple=cds.grapple=2.5/mv('grapple','speed')/(L('hookshot')?1.4:1);snd(500,.15,'square',.05,700);
   const off=!ARENA.on(player.p.x,player.p.z)||player.p.y<ARENA.fy(player.p.x,player.p.z)-.2;let tgt=null,bd=13;
   if(!off)for(const b of bodies){if(b===player||b.kind==='boulder'||b.dead)continue;const d=b.p.distanceTo(player.p);if(d<bd){bd=d;tgt=b}}
   if(tgt){const dx=tgt.p.x-player.p.x,dz=tgt.p.z-player.p.z,d=Math.hypot(dx,dz)||1,nx=dx/d,nz=dz/d,k=12*f,tk=k/Math.sqrt(tgt.m);
@@ -1131,13 +1333,16 @@ function doGrapple(){const f=mv('grapple','force');cdmax.grapple=cds.grapple=2.5
   else if(off){const[fx,fz]=ARENA.nearest(player.p.x,player.p.z,1.5),dx=fx-player.p.x,dz=fz-player.p.z,dd=Math.hypot(dx,dz)||1;player.v.x=dx/dd*(7+dd*.9);player.v.z=dz/dd*(7+dd*.9);player.v.y=Math.min(24,Math.sqrt(2*G0*(Math.max(0,ARENA.fy(fx,fz)-player.p.y)+2.5)));player.slam=false;hookTo.set(fx,0,fz)}
   else{player.v.x+=player.face.x*10*f;player.v.z+=player.face.z*10*f;hookTo.copy(player.p).addScaledVector(player.face,6)}
   hookT=.22}
+function paintDisc(x,z,rad){const PX=PXh(),cw=2*PX/PN;let n=0;
+  for(let i=Math.max(0,Math.floor((x-rad+PX)/cw));i<=Math.min(PN-1,Math.floor((x+rad+PX)/cw));i++)for(let j=Math.max(0,Math.floor((z-rad+PX)/cw));j<=Math.min(PN-1,Math.floor((z+rad+PX)/cw));j++){
+    const k=j*PN+i,cx=-PX+(i+.5)*cw,cz=-PX+(j+.5)*cw;if(pcell[k]<=0&&Math.hypot(cx-x,cz-z)<=rad&&ARENA.on(cx,cz,.3)){pcell[k]=12*mv('paint','force');pdirty=true;n++;if(!L('wetpaint'))add(PAY.paint,'paint',null)}}return n}
 function doBomb(){cdmax.bomb=cds.bomb=3/mv('bomb','speed');snd(260,.2,'square',.05,300);const n=Math.round(mv('bomb','count'));
   for(let i=0;i<n;i++){const m=new T.Mesh(GEO.sphere,MAT.iron);m.scale.setScalar(.32);m.position.copy(player.p);world.add(m);
     const a=(i-(n-1)/2)*.6,c=Math.cos(a),s=Math.sin(a),fx=player.face.x*c-player.face.z*s,fz=player.face.x*s+player.face.z*c;
     bombs.push({mesh:m,p:m.position,v:new V3(fx*9+player.v.x*.5,7.5,fz*9+player.v.z*.5),t:0})}}
 function doBlink(){cdmax.blink=cds.blink=3/mv('blink','speed');const d=5*mv('blink','size');ringFx(player.p.x,player.p.z,2,0xd0adff);ghost(player.p,player.r,0xd0adff);
   let x=player.p.x+player.face.x*d,z=player.p.z+player.face.z*d;const on=ARENA.on(player.p.x,player.p.z);
-  if(L('phase'))for(const b of bodies){if(b.kind!=='runner'||b.dead)continue;const px=b.p.x-player.p.x,pz=b.p.z-player.p.z,al=clamp(px*player.face.x+pz*player.face.z,0,d);if(Math.hypot(px-player.face.x*al,pz-player.face.z*al)<1.3){b.dead=true;world.remove(b.mesh);add(PAY.tag,'tag',b.p.clone());burst(b.p,0xffd23f,10)}}for(let k=0;on&&k<12&&!ARENA.on(x,z,.4);k++){x=(x+player.p.x)/2;z=(z+player.p.z)/2}
+  if(L('phase'))for(const b of bodies){if(b.kind!=='runner'||b.dead)continue;const px=b.p.x-player.p.x,pz=b.p.z-player.p.z,al=clamp(px*player.face.x+pz*player.face.z,0,d);if(Math.hypot(px-player.face.x*al,pz-player.face.z*al)<1.3){b.dead=true;world.remove(b.mesh);add(PAY.tag,'tag',b.p.clone(),L('mirrormatch')&&ev.mirrorT>0?3:1);burst(b.p,0xffd23f,10)}}for(let k=0;on&&k<12&&!ARENA.on(x,z,.4);k++){x=(x+player.p.x)/2;z=(z+player.p.z)/2}
   player.p.x=x;player.p.z=z;player.inv=Math.max(player.inv,.35);ringFx(x,z,2,0xd0adff);snd(900,.12,'sine',.07,900)}
 
 /* ---------- simulation ---------- */
@@ -1146,13 +1351,16 @@ const nx_=(c,d2)=>c/Math.sqrt(d2);
 const wrap=a=>{a=(a+Math.PI)%(2*Math.PI);if(a<0)a+=2*Math.PI;return a-Math.PI};
 function update(dt){
   S.t+=dt;
-  const ramp=(1+Math.max(0,S.t-120)/400)*(S.boss?1.6:1);
+  const ramp=(1+Math.max(0,S.t-120)/250+Math.pow(Math.max(0,S.t-360)/300,2))*(S.boss?1.6:1); // pressure keeps climbing, faster after 6 min
   const g=G0*(L('moon')?.42:1), ice=L('ice'), fr=ice?.45:L('sticky')?14:5, bouncy=L('bouncy');
   // plate radius
   let Rb=R0*(L('tiny')?.8:1)*(L('mega')?1.45:1);
   if(L('shrink')){const ph=S.t*.8*mv('shrink','speed');Rb*=1-.26*(.5-.5*Math.cos(ph));
     const cyc=Math.floor(ph/6.283);if(cyc>ev.shrinkCycle){ev.shrinkCycle=cyc;snd(260,.45,'sine',.06,-130);if(S.lastFall<ev.shrinkStart)add(PAY.shrink,'shrink',player.p.clone());ev.shrinkStart=S.t}}
-  R=Rb; plate.scale.set(R/R0,1,R/R0);
+  if(S.t>300)Rb*=Math.max(.6,1-(S.t-300)/1000); // the plate slowly erodes after 5 min
+  Rb*=morphK(dt);R=Rb; plate.scale.set(R/R0,1,R/R0);
+  // Overtime: from 8 min a heart drains on a shrinking timer, so no build can survive forever
+  if(S.t>480){ev.otT=(ev.otT??30)-dt;if(ev.otT<=0){ev.otT=Math.max(6,30-(S.t-480)/20);banner('Overtime');loseHeart();flash();shake=.5;snd(110,.4,'sawtooth',.08,-60);if(S.hearts<=0||L('countdown')&&S.clock<=0){gameOver();return}}}
   // tilt
   // tilt: Tilt-a-World circles, Seesaw follows the weight, Wobble shudders
   let gx=0,gz=0;
@@ -1182,13 +1390,13 @@ function update(dt){
   if(tw.t>0){tw.t-=dt;tw.p.addScaledVector(tw.v,dt);if(!ARENA.on(tw.p.x,tw.p.z,2)){const[ix,iz]=ARENA.inward(tw.p.x,tw.p.z);tw.v.set(ix*2.5,0,iz*2.5)}
     const rr=3.2*mv('tornado','size'),f=mv('tornado','force');
     for(const b of bodies){if(b.kind==='boulder'||b.kind==='boss')continue;const dx=tw.p.x-b.p.x,dz=tw.p.z-b.p.z,d=Math.hypot(dx,dz);if(d<rr){const k=(1-d/rr)*f;b.v.x+=(dx/d*6-dz/d*9)*k*dt;b.v.z+=(dz/d*6+dx/d*9)*k*dt;b.v.y+=22*k*dt}}
-    if(tw.t<=0){tw.mesh.visible=false;if(S.lastFall<tw.start)add(PAY.tornado,'tornado',player.p.clone())}}
+    if(tw.t<=0){tw.mesh.visible=false;if(S.lastFall<tw.start)add(PAY.tornado,'tornado',player.p.clone(),L('tamer')?2:1)}}
   // flood
   if(ev.floodT>0){ev.floodT-=dt;const lvl=Math.min(1,(6-ev.floodT)/3.5);water.visible=true;water.scale.set(R*ARENA.ext*1.05,lvl*1.1,R*ARENA.ext*1.05);water.position.y=lvl*.55;
-    if(!ev.floodPeaked&&lvl>=1){ev.floodPeaked=true;const dry=player.p.y-player.r>.9||L('waterwalk');if(dry)add(PAY.flood,'flood',player.p.clone());else{hurt(0,0);banner('Soaked')}}
+    if(!ev.floodPeaked&&lvl>=1){ev.floodPeaked=true;const dry=player.p.y-player.r>.9||L('waterwalk');if(S.lastFall>=ev.floodStart){/* already lost a heart falling off during this flood */}else if(dry)add(PAY.flood,'flood',player.p.clone(),L('tidalwave')?2:1);else{hurt(0,0);banner('Soaked')}}
     if(ev.floodT<=0){water.visible=false;floodPads=[];buildPads();ev.floodPeaked=false}}
   // arena swap
-  if(ev.swapT>0){ev.swapT-=dt;if(ev.swapT<=0){ARENA.set(ev.swapBack||'disc');if(S.lastFall<ev.swapStart)add(PAY.swap,'swap',player.p.clone());banner('Back to normal')}}
+  if(ev.swapT>0){ev.swapT-=dt;if(ev.swapT<=0){morphTo(ev.swapBack||'disc',0);if(S.lastFall<ev.swapStart)add(PAY.swap,'swap',player.p.clone());banner('Back to normal')}}
   // storm
   if(L('storm')){ev.boltT=(ev.boltT??3)-dt;if(ev.boltT<=0&&!boltMk.visible){let x=player.p.x+rand(-2.5,2.5),z=player.p.z+rand(-2.5,2.5);
     if(L('rod')){let best=null,bd=12;for(const b of bodies){if(b===player||b.kind==='boulder')continue;const d=b.p.distanceTo(player.p);if(d<bd){bd=d;best=b}}if(best){x=best.p.x;z=best.p.z}}boltMk.position.set(x,.07+ARENA.fy(x,z),z);boltMk.scale.setScalar(1.6);boltMk.visible=true;ev.boltWarn=1}
@@ -1198,11 +1406,12 @@ function update(dt){
   // --- player control
   fwd.copy(camFwd);right.set(-fwd.z,0,fwd.x);
   let ix=(keys.KeyD||keys.ArrowRight?1:0)-(keys.KeyA||keys.ArrowLeft?1:0)+stick.x, iy=(keys.KeyW||keys.ArrowUp?1:0)-(keys.KeyS||keys.ArrowDown?1:0)+stick.y;
+  if(tilt.on){ix+=tilt.x;iy+=tilt.y}
   const il=Math.hypot(ix,iy);if(il>1){ix/=il;iy/=il}
   if(ev.mirrorT>0){ix=-ix;iy=-iy}
   const mx=fwd.x*iy+right.x*ix, mz=fwd.z*iy+right.z*ix;
   if(il>.1)player.face.set(mx,0,mz).normalize();
-  const acc=player.g?(ice?13:L('sticky')?26:38):15;
+  const acc=player.g?(ice?13:L('sticky')?26:46):21; // tighter steering than 1.1: snappier ground accel, more air control
   player.v.x+=mx*acc*dt;player.v.z+=mz*acc*dt;
   if(L('glider')&&!player.g&&(keys.Space||jumpHeld)&&player.v.y<-2.5)player.v.y=-2.5;
   player.coyote=player.g?.12:player.coyote-dt;if(player.g)player.airJ=L('djump')?Math.round(mv('djump','count'))+(L('triple')?1:0):0;
@@ -1258,7 +1467,13 @@ function update(dt){
     else if(b.kind==='dummy'){b.t+=dt;if(b.t>2){b.t=0;b.dir=rand(0,6.28)}
       let ax=Math.cos(b.dir),az=Math.sin(b.dir);if(ARENA.sd(b.p.x,b.p.z)<.3*ARENA.depth)[ax,az]=ARENA.inward(b.p.x,b.p.z);
       if(b.g){b.v.x+=ax*(ice?4:10)*dt;b.v.z+=az*(ice?4:10)*dt}b.mesh.rotation.z=Math.sin(S.t*7+b.dir)*.18}
-    else if(b.kind==='boss'){const dx=player.p.x-b.p.x,dz=player.p.z-b.p.z,d=Math.hypot(dx,dz)||1,a=b.g?(ice?5:11):2;b.v.x+=dx/d*a*dt;b.v.z+=dz/d*a*dt;b.mesh.rotation.y=Math.atan2(dx,dz)}
+    else if(b.kind==='boss'){const dx=player.p.x-b.p.x,dz=player.p.z-b.p.z,d=Math.hypot(dx,dz)||1;let ax=dx/d,az=dz/d,a=b.g?(ice?5:11):2;
+      // smarter bosses: steer around bumpers, stay off the edge, and vary by type (tracker, charger, heavy)
+      for(const bp of bumpers){const ox=b.p.x-bp.p.x,oz=b.p.z-bp.p.z,od=Math.hypot(ox,oz)||1;if(od<3.2){const w=(3.2-od)/3.2*1.8;ax+=ox/od*w;az+=oz/od*w}}
+      if(ARENA.sd(b.p.x,b.p.z)<2.6){const[ix,iz]=ARENA.inward(b.p.x,b.p.z);ax+=ix*1.1;az+=iz*1.1}
+      if(b.var==='charger'){b.chg-=dt;if(b.chg<=0){b.chg=3.4;b.rush=.55}if(b.rush>0){b.rush-=dt;a*=2.6}}
+      if(b.var==='heavy')a*=.85;
+      const al=Math.hypot(ax,az)||1;b.v.x+=ax/al*a*dt;b.v.z+=az/al*a*dt;b.mesh.rotation.y=Math.atan2(dx,dz)}
     else if(b.kind==='runner'){const dx=b.p.x-player.p.x,dz=b.p.z-player.p.z,d=Math.hypot(dx,dz)||1,e=clamp((.5-ARENA.sd(b.p.x,b.p.z)/ARENA.depth)/.35,0,1),[ix,iz]=ARENA.inward(b.p.x,b.p.z);
       let ax=dx/d+ix*e*2+iz*e,az=dz/d+iz*e*2-ix*e;const al=Math.hypot(ax,az)||1,k=(ice?10:28)*dt/al;
       if(b.g){b.v.x+=ax*k;b.v.z+=az*k}b.mesh.rotation.z=Math.sin(S.t*14)*.2}
@@ -1270,7 +1485,7 @@ function update(dt){
     b.cd-=dt; b.v.y-=g*(b.gs||1)*dt; b.v.x+=tx*dt; b.v.z+=tz*dt;
     b.p.x+=b.v.x*dt;b.p.y+=b.v.y*dt;b.p.z+=b.v.z*dt;
     edgeRule(b,dt);
-    const on=ARENA.on(b.p.x,b.p.z,-b.r*.35),fl=ARENA.fy(b.p.x,b.p.z);
+    const upOn=S.lv.mezzanine&&b.p.y>MEZ_H-.6&&ARENA.onUpper(b.p.x,b.p.z,-b.r*.35),on=upOn||ARENA.on(b.p.x,b.p.z,-b.r*.35),fl=ARENA.fy(b.p.x,b.p.z,b.p.y);
     if(on&&b.p.y<fl+b.r&&b.p.y>fl-.5&&b.v.y<=0){
       const impact=-b.v.y; b.p.y=fl+b.r;
       if(ARENA.sh.fy){const e=.3,sx=(ARENA.fy(b.p.x+e,b.p.z)-ARENA.fy(b.p.x-e,b.p.z))/(2*e),sz=(ARENA.fy(b.p.x,b.p.z+e)-ARENA.fy(b.p.x,b.p.z-e))/(2*e);b.v.x-=sx*g*.55*dt;b.v.z-=sz*g*.55*dt}
@@ -1278,12 +1493,15 @@ function update(dt){
         if(L('surfer')){const sr=5*mv('slam','size');for(const o of bodies)if(o.kind==='boulder'&&!o.dead&&Math.hypot(o.p.x-b.p.x,o.p.z-b.p.z)<sr){o.dead=true;world.remove(o.mesh);burst(o.p,0x8a7a6a,10);add(PAY.stampede*.5,'stampede',o.p.clone())}}}
       else if(bouncy&&impact>3){b.v.y=impact*.72}else b.v.y=0;
       b.g=true;
+      {const rm=ARENA.rampAt(b.p.x,b.p.z);b.slide=!!rm&&fl>.3;if(b.slide){b.v.x+=rm.c*16*dt;b.v.z+=rm.s*16*dt}} // slides carry you down
       if(impact>6){if(b===player){player.q=Math.max(player.q,Math.min(.45,impact*.03));burst(b.p,0xf3ecdc,4)}
         else if(b.r>.8){shake=Math.max(shake,.3);snd(55,.16,'sine',.1,-15);burst(b.p,0xf3ecdc,5)}}
       if(b===player){if(ev.flipPending&&S.t-ev.flipT>.4){ev.flipPending=false;add(PAY.flip,'flip',b.p.clone(),L('spincycle')&&L('turntable')?3:1)}
-        if(L('pogo')&&b.v.y<7)b.v.y=8.5*mv('pogo','force')}
-    }else b.g=false;
-    if(b.g&&b.kind!=='boulder'){const k=Math.exp(-fr*dt);b.v.x*=k;b.v.z*=k}
+        if(L('pogo')&&b.v.y<7){b.v.y=8.5*mv('pogo','force');if(L('quakerider')&&ev.quakeT>0)add(PAY.quakerider,'quakerider',b.p.clone())}}
+    }else{b.g=false;b.slide=false}
+    if(b.g&&!b.slide&&b.kind!=='boulder'){const k=Math.exp(-fr*dt);b.v.x*=k;b.v.z*=k}
+    if(b===player){if(!ARENA.on(b.p.x,b.p.z,-.4)&&b.p.y<b.r-.4&&!player.hooked)ev.offT=(ev.offT||0)+dt;else ev.offT=0;
+      if(ev.offT>1.6){ev.offT=0;fell(b);continue}} // off the plate this long counts as fallen, however slowly you drift down
     if(b.p.y<-16)fell(b);
   }
   if(S.phase!=='play')return;
@@ -1294,7 +1512,7 @@ function update(dt){
     for(let j=i+1;j<bodies.length;j++){const b=bodies[j];if(b.dead)continue;
       const dx=b.p.x-a.p.x,dy=b.p.y-a.p.y,dz=b.p.z-a.p.z,min=a.r+b.r,d2=dx*dx+dy*dy+dz*dz;
       if(d2>=min*min||d2<1e-6)continue;
-      if(a===player&&b.kind==='runner'){b.dead=true;world.remove(b.mesh);add(PAY.tag,'tag',b.p.clone());burst(b.p,0xffd23f,10);hitStop(.04);snd(1040,.15,'square',.05,500);continue}
+      if(a===player&&b.kind==='runner'){b.dead=true;world.remove(b.mesh);add(PAY.tag,'tag',b.p.clone(),L('mirrormatch')&&ev.mirrorT>0?3:1);burst(b.p,0xffd23f,10);hitStop(.04);snd(1040,.15,'square',.05,500);continue}
       if(a===player&&b.kind==='crate'&&(player.dashT>0||player.slam||Math.hypot(a.v.x-b.v.x,a.v.y-b.v.y,a.v.z-b.v.z)>6.5)){smash(b);continue}
       if(a===player&&b.kind==='ball'){if(b.p.y>b.r+.35&&b.cd<=0){b.cd=.45;add(PAY.juggle,'juggle',b.p.clone(),L('zerog')?2:1);snd(700,.08,'triangle',.06,300)}b.v.y=Math.max(b.v.y,0)+9}
       if(a===player&&b.kind==='boss'&&player.dashT<=0){a.v.x-=nx_(dx,d2)*7;a.v.z-=nx_(dz,d2)*7;a.v.y+=3}
@@ -1360,14 +1578,16 @@ function update(dt){
   // --- bombs
   for(const bm of bombs){bm.t+=dt;bm.v.y-=g*dt;bm.p.addScaledVector(bm.v,dt);
     if((bm.p.y<=.35&&bm.v.y<0)||bm.t>1.6){bm.dead=true;world.remove(bm.mesh);tmp.set(bm.p.x,.5,bm.p.z);burst(tmp,0xff9140,10);snd(70,.3,'sawtooth',.1,-20);nz(.35,.28,'lowpass',800,100);hitStop(.03);
+      if(L('paintbomb')&&L('paint'))paintDisc(bm.p.x,bm.p.z,4.5*mv('bomb','size'));
       shockwave(bm.p.x,bm.p.z,3.6*mv('bomb','size'),15*mv('bomb','force'),true,stacks('bomb','force')>0)}}
   bombs=bombs.filter(b=>!b.dead);
   // --- painter
-  if(L('paint')){const PX=R0*ARENA.ext,cw=2*PX/PN,br=.8*mv('paint','size');paintMesh.scale.setScalar(PX);
-    if(player.g&&ARENA.on(player.p.x,player.p.z)){
+  if(L('paint')){const PX=PXh(),cw=2*PX/PN,br=.8*mv('paint','size');paintMesh.scale.setScalar(PX);
+    if((player.g||L('skywriter'))&&ARENA.on(player.p.x,player.p.z)){
       for(let i=Math.max(0,Math.floor((player.p.x-br+PX)/cw));i<=Math.min(PN-1,Math.floor((player.p.x+br+PX)/cw));i++)
         for(let j=Math.max(0,Math.floor((player.p.z-br+PX)/cw));j<=Math.min(PN-1,Math.floor((player.p.z+br+PX)/cw));j++){const k=j*PN+i;
-          if(pcell[k]<=0&&ARENA.on(-PX+(i+.5)*cw,-PX+(j+.5)*cw,.3)){pcell[k]=12;pdirty=true;add(PAY.paint,'paint',null);snd(700+i*20,.03,'triangle',.02)}}}
+          if(pcell[k]<=0&&ARENA.on(-PX+(i+.5)*cw,-PX+(j+.5)*cw,.3)){pcell[k]=12*mv('paint','force');pdirty=true;if(!L('wetpaint'))add(PAY.paint,'paint',null);snd(700+i*20,.03,'triangle',.02)}}}
+    if(L('wetpaint')){timers.wet=(timers.wet||0)+dt;const iv=2/mv('paint','speed');if(timers.wet>=iv){timers.wet=0;let n=0;for(let k=0;k<pcell.length;k++)if(pcell[k]>0)n++;if(n)add(PAY.wetpaint*n,'wetpaint',null)}}
     for(let k=0;k<pcell.length;k++)if(pcell[k]>0){pcell[k]-=dt;if(pcell[k]<=0)pdirty=true}
     if(pdirty){pdirty=false;pctx.clearRect(0,0,pcan.width,pcan.height);pctx.fillStyle=stacks('paint','score')?'#ffc21a':'#ff3d77';
       for(let k=0;k<pcell.length;k++)if(pcell[k]>0)pctx.fillRect((k%PN)*16+1,Math.floor(k/PN)*16+1,14,14);ptex.needsUpdate=true}}
@@ -1385,7 +1605,7 @@ function update(dt){
   if(L('air')&&!player.g&&player.p.y>player.r+.25){timers.airAcc+=dt;if(timers.airAcc>=.25){timers.airAcc=0;add(PAY.air,'air',player.p.clone(),(L('moonshot')&&player.p.y>4?3:1)*(L('triple')?2:1))}}
 
   // --- wrecking balls
-  const wsp=4.2*mv('orbit','speed'),wk=11*mv('orbit','force'),wr=1.9*mv('orbit','size');
+  const wsp=4.2*mv('orbit','speed'),wk=11*mv('orbit','force'),wr=1.9*mv('orbit','size')*(L('tamer')&&tw.mesh.visible?1.6:1);
   wreck.forEach((w,i)=>{const a=S.t*wsp+i*6.283/wreck.length,rr=player.r+wr;w.p.set(player.p.x+Math.cos(a)*rr,player.p.y,player.p.z+Math.sin(a)*rr);
     for(const b of bodies){if(b===player||b.cd>0)continue;if(w.p.distanceTo(b.p)>b.r+w.r)continue;if(b.kind==='crate'){smash(b);continue}const dx=b.p.x-player.p.x,dz=b.p.z-player.p.z,d=Math.hypot(dx,dz)||1,k=wk/Math.sqrt(b.m);
       b.v.x+=dx/d*k;b.v.z+=dz/d*k;b.v.y+=3.5;b.cd=.3;burst(w.p,0xffffff,3);snd(240,.05,'square',.03)}});
@@ -1394,7 +1614,7 @@ function update(dt){
   if(L('blaster')){timers.blast-=dt;if(timers.blast<=0){let bestB=null,bd=14;for(const b of bodies){if(b===player)continue;const d=b.p.distanceTo(player.p);if(d<bd&&b.p.y<3){bd=d;bestB=b}}
       if(bestB){timers.blast=.65/mv('blaster','speed');const m=new T.Mesh(GEO.sphere,MAT.bullet);m.scale.setScalar(.2);m.position.copy(player.p);world.add(m);
         const v=bestB.p.clone().sub(player.p).normalize().multiplyScalar(24);bullets.push({mesh:m,p:m.position,v,t:0});snd(1200,.04,'square',.02,-600)}}}
-  const bf=.42*mv('blaster','force');
+  const bf=.42*mv('blaster','force')*(L('hookshot')?1.5:1);
   for(const bl of bullets){bl.t+=dt;bl.p.addScaledVector(bl.v,dt);
     for(const b of bodies){if(b===player||bl.dead||b.dead)continue;if(bl.p.distanceTo(b.p)<b.r+.25){if(b.kind==='crate')smash(b);b.v.x+=bl.v.x*bf/b.m;b.v.z+=bl.v.z*bf/b.m;b.v.y+=3;bl.dead=true;burst(bl.p,0xffd23f,3)}}
     if(bl.t>1.1)bl.dead=true;if(bl.dead)world.remove(bl.mesh)}
@@ -1404,10 +1624,41 @@ function update(dt){
 
   updatePickup(dt);
   S.cleanT+=dt;
+  // --- 1.4: island, walls, Simon, bonus disk, katamari
+  for(let i=isle.length-1;i>=0;i--){const q=isle[i];q.t-=dt;q.x+=q.vx*dt;q.z+=q.vz*dt;if(!ARENA.on(q.x,q.z,1.5)){q.vx=-q.vx;q.vz=-q.vz}
+    q.mesh.position.set(q.x,q.h/2,q.z);
+    if(Math.hypot(player.p.x-q.x,player.p.z-q.z)<q.r&&player.p.y>q.h+player.r-.35&&player.p.y<q.h+player.r+1.5)q.on+=dt;
+    if(!q.paid&&q.on>=3){q.paid=true;add(PAY.floatisland,'floatisland',player.p.clone());snd(880,.1,'triangle',.06,300)}
+    if(q.t<=0){isle.splice(i,1);buildIsle()}}
+  for(let i=walls.length-1;i>=0;i--){const w=walls[i];w.t+=dt;
+    const h=Math.min(clamp(w.t/.8,0,1),clamp((w.life-w.t)/.6,0,1));
+    w.mesh.scale.y=Math.max(.05,h*2.2);w.mesh.position.y=Math.max(.03,h*1.1);
+    if(w.t>.3&&h>.5){const c=Math.cos(w.yaw),sn=Math.sin(w.yaw),L2=w.len/2;
+      for(const b of bodies){if(b.dead||b.p.y>2.4)continue;const dx=b.p.x-w.x,dz=b.p.z-w.z,u=dx*c+dz*sn,v=-dx*sn+dz*c;let nu=u-clamp(u,-L2,L2),nv=v-clamp(v,-.3,.3);const dd=Math.hypot(nu,nv);
+        if(dd>=b.r)continue;let pen;if(dd<1e-4){nu=0;nv=v>=0?1:-1;pen=.3-Math.abs(v)+b.r}else{nu/=dd;nv/=dd;pen=b.r-dd}
+        const nx=nu*c-nv*sn,nz=nu*sn+nv*c;b.p.x+=nx*pen;b.p.z+=nz*pen;const vn=b.v.x*nx+b.v.z*nz;if(vn<0){b.v.x-=1.4*vn*nx;b.v.z-=1.4*vn*nz}}}
+    if(w.t>=w.life){wallG.remove(w.mesh);walls.splice(i,1);if(!walls.length&&(S.hitN||0)===ev.wallHit)add(PAY.walls,'walls',player.p.clone())}}
+  if(ev.simon){const sm=ev.simon;sm.t+=dt*(sm.phase==='show'?sm.speed:1);const lit=(k,on)=>{sm.pads[k].m.material.opacity=on?.95:.3};
+    if(sm.phase==='show'){const i=Math.floor(sm.t/.9),ph=sm.t-i*.9;for(let k=0;k<4;k++)lit(k,sm.t>=0&&i<sm.seq.length&&sm.seq[i]===k&&ph<.6);
+      if(sm.t>=0&&i!==sm.shown&&i<sm.seq.length){sm.shown=i;snd(SIMON_NOTE[sm.seq[i]],.3,'triangle',.08)}
+      if(i>=sm.seq.length){sm.phase='input';sm.t=0;banner('Your turn');for(let k=0;k<4;k++)lit(k,false)}}
+    else if(sm.phase==='input'){let on=-1;for(let k=0;k<4;k++)if(Math.hypot(player.p.x-sm.pads[k].x,player.p.z-sm.pads[k].z)<1.3&&player.p.y<3)on=k;
+      for(let k=0;k<4;k++)lit(k,k===on);
+      if(on!==sm.cur){sm.cur=on;if(on>=0){if(on===sm.seq[sm.idx]){snd(SIMON_NOTE[on],.25,'triangle',.08);sm.idx++;
+        if(sm.idx>=sm.seq.length){sm.phase='done';sm.t=0;sm.ok=true;add(PAY.simon*sm.seq.length,'simon',player.p.clone());banner('Simon approves!')}}
+        else{sm.phase='done';sm.t=0;snd(90,.4,'sawtooth',.1,-30);banner('Wrong pad')}}}
+      if(sm.phase==='input'&&sm.t>8+sm.seq.length){sm.phase='done';sm.t=0;banner('Too slow')}}
+    else if(sm.t>.9)clearSimon()}
+  if(L('bonusdisk')){if(!zone.on||!ARENA.on(zone.p.x,zone.p.z,1)){const[x,z]=spot(.7,0);zone.p.set(x,0,z);zone.on=true}
+    zoneMk.visible=true;zoneMk.position.set(zone.p.x,.035+ARENA.fy(zone.p.x,zone.p.z),zone.p.z)}else{zoneMk.visible=false;zone.on=false}
+  if(L('katamari'))kataUpdate();
+  mezG.visible=!!L('mezzanine');if(mezG.visible){mezG.scale.set(R/R0,1,R/R0);mezUpdate(dt,g)}
+  if(L('slipstream')&&player.dashT>0){timers.slip=(timers.slip||0)+dt;if(timers.slip>=.1){timers.slip=0;add(PAY.slipstream,'slipstream',null)}}
   if(L('countdown')){if(!(L('overclock')&&S.streak>0&&S.t-S.lastScore<2))S.clock-=dt;if(S.clock<=0){gameOver();return}}
   if(L('decay')){S.score=Math.max(0,S.score-S.score*.012*dt);S.peak=Math.max(S.peak,S.score)}
   if(L('bank')){bankUpdate(dt)}else bankMk.visible=false;
-  if(L('rent')){S.rentT-=dt;if(S.rentT<=0){const due=rentDue();if(S.earned-S.rentBase<due){banner('Rent missed');loseHeart();flash();if(S.hearts<=0){gameOver();return}}else{banner('Rent paid');if(L('landlord')&&S.hearts<maxH())S.hearts++}S.rentT=60;S.rentBase=S.earned}}
+  if(L('sprint')&&!pks.length){S.goalT-=dt;if(S.goalT<=0){S.goalT=30;S.pickBase=S.earned;banner('Goal missed');loseHeart();flash();if(S.hearts<=0||L('countdown')&&S.clock<=0){gameOver();return}}}
+  if(L('rent')){S.rentT-=dt;if(S.rentT<=0){const due=rentDue();if(S.earned-S.rentBase<due){banner('Rent missed');loseHeart();flash();if(S.hearts<=0){gameOver();return}}else{banner('Rent paid');if(L('landlord')&&S.hearts<maxH())spawnHeart(14)}S.rentT=60;S.rentBase=S.earned}}
   if(L('rewire')){timers.rewire=(timers.rewire??60)-dt;if(timers.rewire<=0){timers.rewire=60;rewireOne()}}
   if(L('inflation')){timers.infl=(timers.infl??60)-dt;if(timers.infl<=0){timers.infl=60;S.infl*=1.1;S.inflF*=1.05;banner('Inflation +10%')}}
   // the boss keeps its old rhythm: every 200 s of play, for 30 s
@@ -1431,12 +1682,14 @@ function visuals(dt,rdt){
   debris.rotation.y+=rdt*.02;pickupVisuals(rdt);
   if(hookT>0){hookT-=rdt;hookLine.visible=true;hookLine.geometry.setFromPoints([player.p,hookTo])}else hookLine.visible=false;
   const night=L('night')||(L('daynight')&&Math.sin(S.t*Math.PI/10)<0),k=1-Math.exp(-3*rdt);
-  {const fn=L('fog')?8:34,ff=L('fog')?30:95;scene.fog.near+=(fn-scene.fog.near)*k;scene.fog.far+=(ff-scene.fog.far)*k}
+  {const dd=Math.max(23.3,camPos.distanceTo(camLook))-23.3,fn=(L('fog')?8:34)+dd,ff=(L('fog')?30:95)+dd; // fog keeps its depth relative to how far the camera is
+   scene.fog.near+=(fn-scene.fog.near)*k;scene.fog.far+=(ff-scene.fog.far)*k}
   if(tw.mesh.visible){tw.mesh.position.set(tw.p.x,3.2+ARENA.fy(tw.p.x,tw.p.z),tw.p.z);tw.mesh.scale.set(3.2*mv('tornado','size'),6.5,3.2*mv('tornado','size'));tw.mesh.rotation.y+=rdt*9;tw.mesh.rotation.x=Math.PI}
   scene.background.lerp(night?NIGHT:SKY,k);scene.fog.color.copy(scene.background);
+  {const v=skyMat.color.r+((night?.35:1)-skyMat.color.r)*k;skyMat.color.setScalar(v);if(!reduceMotion)skyMesh.rotation.y+=rdt*.004;skyMesh.position.copy(camera.position)}
   hemi.intensity+=((night?.1:.78)-hemi.intensity)*k;sun.intensity+=((night?.06:.85)-sun.intensity)*k;lamp.intensity+=((night?1.9:0)-lamp.intensity)*k;
   tmp.copy(player.p).applyMatrix4(world.matrixWorld);lamp.position.set(tmp.x,tmp.y+3,tmp.z);
-  const asp=camera.aspect,zoom=(asp<1.25?Math.min(2,Math.pow(1.25/asp,.75)):1)*Math.max(1,(R/R0)*.6+ARENA.ext*.4);
+  const asp=camera.aspect,zoom=(asp<1.25?Math.min(2,Math.pow(1.25/asp,.75)):1)*Math.max(1,(R/R0)*.6+ARENA.ext*.4)*(1+.3*(kataSize()-1));
   const px=clamp(player.p.x,-R0,R0),pz=clamp(player.p.z,-R0,R0);
   let tx=px*.45,tz=pz*.45,ty=0,ox=0,oy=16,oz=17,fov=48;
   if(S.phase==='title'){camSpin+=rdt*.25;ox=Math.sin(camSpin)*17;oz=Math.cos(camSpin)*17}
@@ -1466,7 +1719,7 @@ function hud(){
   $('mult').textContent=L('bank')?'Unbanked '+fmt(S.unbanked):L('rent')?'Rent '+fmt(Math.max(0,S.earned-S.rentBase))+' / '+fmt(rentDue())+' in '+Math.ceil(S.rentT)+' s':L('decay')?'Peak '+fmt(S.peak):'Income '+fmt(S.income)+' · Bounties '+fmt(S.bounty);
   $('hearts').innerHTML=L('countdown')?'⏱ '+Math.max(0,Math.ceil(S.clock))+' s':'♥'.repeat(Math.max(0,S.hearts))+'<i>'+'♥'.repeat(Math.max(0,maxH()-S.hearts))+'</i>';
   $('foresee').textContent=L('foresight')&&S.nextOffers?'Next: '+S.nextOffers.map(offerName).join(' · '):'';
-  $('phase').innerHTML=(S.run==='daily'?'Daily · ':S.run==='code'?'Shared · ':'')+(S.boss?'Boss · ':'')+mmss(S.t)+'<span class="cnt"> · '+S.picks.length+' cards'+(pks.length&&!S.boss?(L('runaway')?' · catch the card':' · grab the card'):L('headhunt')?' · '+S.koSince+'/4 knockouts':L('lap')?' · beacon '+(S.lapN+1)+'/4':'')+'</span>';
+  $('phase').innerHTML=(S.run==='daily'?'Daily · ':S.run==='code'?'Shared · ':'')+(S.boss?'Boss · ':'')+mmss(S.t)+'<span class="cnt"> · '+S.picks.length+' cards'+(pks.length&&!S.boss?(L('runaway')?' · catch the card':' · grab the card'):L('headhunt')?' · '+S.koSince+'/4 knockouts':L('lap')?' · beacon '+(S.lapN+1)+'/4':L('sprint')?' · goal '+Math.ceil(S.goalT)+' s':L('scars')?' · hits '+Math.min(3,S.hitsSince||0)+'/3':L('chain')?' · chain '+(S.t-S.chainLast<2?S.chainN:0)+'/12':'')+'</span>';
 }
 const mmss=t=>Math.floor(t/60)+':'+String(Math.floor(t%60)).padStart(2,'0');
 const modNames=id=>MODS.flatMap(m=>Array(stacks(id,m.id)).fill(m.name)).concat(S.trig[id]?[trigById[S.trig[id]].name]:[]);
@@ -1490,14 +1743,14 @@ function pause(){if(S.phase!=='play')return;S.phase='pause';
   $('pause').hidden=false}
 function resume(){if(S.phase!=='pause')return;$('pause').hidden=true;S.phase='play';last=performance.now()}
 function chips(){$('chips').innerHTML=S.picks.map(id=>{const c=byId[id],m=modNames(id);
-  return `<span class="chip" style="--c:var(${TYPE[c.type][1]})">${c.name}${m.length?' <b>× '+m.join(' × ')+'</b>':''}</span>`}).join('')}
+  return `<span class="chip" style="--c:var(${TYPE[c.type][1]})">${c.name}${S.enh[id]?' ★':''}${S.ovl[id]?' ⚡':''}${m.length?' <b>× '+m.join(' × ')+'</b>':''}</span>`}).join('')}
 
 /* ---------- drafting ---------- */
 const shuffle=a=>{for(let i=a.length-1;i>0;i--){const j=Math.floor(rng()*(i+1));[a[i],a[j]]=[a[j],a[i]]}return a};
 function modOffers(n=3){
   const pairs=[];
   for(const id of S.picks){const c=byId[id];
-    for(const m of MODS){const ok=m.id==='score'?!!c.earn:!!(c.mods&&c.mods[m.id]);if(ok&&stacks(id,m.id)<2&&!(S.trig[id]==='hit'&&FREQ[id]===m.id))pairs.push({type:'mod',mod:m,host:c,k:m.id})}
+    for(const m of MODS){const ok=((m.id==='score'||m.id==='lucky')?!!c.earn:!!(c.mods&&c.mods[m.id]))&&!(c.modReq&&c.modReq[m.id]&&!L(c.modReq[m.id]));if(ok&&stacks(id,m.id)<2&&!(S.trig[id]==='hit'&&FREQ[id]===m.id))pairs.push({type:'mod',mod:m,host:c,k:m.id})}
     if(FIRE[id]&&!S.trig[id])for(const t of TRIGS)if((!t.req||t.req())&&!(t.id==='hit'&&FREQ[id]&&stacks(id,FREQ[id])))pairs.push({type:'mod',trig:t,host:c,k:'trig'})}
   shuffle(pairs);const out=[];
   for(const p of pairs)if(out.length<n&&!out.some(o=>o.k===p.k||o.host===p.host))out.push(p);
@@ -1505,10 +1758,21 @@ function modOffers(n=3){
   for(const p of pairs)if(out.length<n&&!out.includes(p)&&!(p.trig&&out.some(o=>o.trig)))out.push(p);
   return out;
 }
+// Requirement modes (no timer) make better cards likelier: Enhanced chance rises, and Overdrive becomes available.
+const requirementMode=()=>['quota','headhunt','lap','clean','sprint','scars','chain'].some(L);
+const enhChance=()=>requirementMode()?.12:.05;
+const modPairsFor=c=>MODS.filter(m=>((m.id==='score'||m.id==='lucky')?!!c.earn:!!(c.mods&&c.mods[m.id]))&&!(c.modReq&&c.modReq[m.id]&&!L(c.modReq[m.id])));
+// Marks offers Enhanced (rule/prompt, 5%) and, with Overdrive owned, one offer Overloaded (free modifier). Uses the seeded rng so shared builds deal the same hands.
+function decorate(out){
+  const rp=o=>o.card&&(o.type==='rule'||o.type==='prompt');
+  for(const o of out)if(rp(o)&&rng()<enhChance())o.enh=true;
+  if(L('overdrive')){const cand=out.filter(o=>rp(o)&&modPairsFor(o.card).length);
+    if(cand.length){const o=cand[Math.floor(rng()*cand.length)],ps=modPairsFor(o.card);o.ovl=true;o.freeMod=ps[Math.floor(rng()*ps.length)]}}
+  return out}
 let lastShown=[],passed={};
 // Weighted draw: cards that combine with what you own come up more; cards you just passed on come up less.
 function wpick(pool,n,ok){const out=[],p=pool.slice();
-  while(out.length<n&&p.length){let tot=0;const w=p.map(c=>{const x=(c.likes&&c.likes.some(L)?3:1)*(lastShown.includes(c.id)?.25:1)*Math.pow(.5,passed[c.id]||0);tot+=x;return x});
+  while(out.length<n&&p.length){let tot=0;const w=p.map(c=>{const x=(c.likes&&c.likes.some(L)?3:1)*RAR_W[rarityOf(c)]*(lastShown.includes(c.id)?.25:1)*Math.pow(.5,passed[c.id]||0);tot+=x;return x});
     let r=rng()*tot,i=0;while(i<p.length-1&&(r-=w[i])>0)i++;const c=p.splice(i,1)[0];if(!ok||ok(c,out))out.push(c)}
   return out}
 function typeOffers(type,n=3){
@@ -1521,7 +1785,8 @@ function typeOffers(type,n=3){
   return out;
 }
 // Offers under the current Draft Style: Wild mixes types, Double shows five.
-function pickOffers(){
+function pickOffers(){return decorate(pickOffers0())}
+function pickOffers0(){
   const n=L('double')?5:3;
   if(L('wild')){let all=[];for(const t of ORDER)all=all.concat(typeOffers(t));shuffle(all);const out=[];
     for(const o of all)if(out.length<n&&!out.some(x=>(x.card&&o.card&&x.card.id===o.card.id)||(x.host&&o.host&&x.host===o.host&&x.k===o.k)))out.push(o);return out}
@@ -1538,6 +1803,15 @@ function cutOffers(){
   return out.map(card=>({type:'cut',card}));
 }
 const HEADS={rule:'Change the rules.',prompt:'What happens while you play?',mod:'Multiply something you already picked.'};
+// Rarity: common, uncommon, rare. Transformative and structural cards are rarer, and synergies are always rare.
+const RARE_IDS=['countdown','sudden','wild','blind','pact','foresight','rewire','echo','garage','double','bank','runaway','skyfall','polarity','zerog','compound'],UNC_IDS=['rocket','jackpot','moonshot','tornado','flood','quake','swap','pits','stampede','mirror','inflation','turntable'];
+const rarityOf=c=>!c?'common':c.syn||RARE_IDS.includes(c.id)?'rare':c.slot||UNC_IDS.includes(c.id)?'uncommon':'common';
+const RAR_W={common:1,uncommon:.6,rare:.35};
+// Plain-words preview shown when you hover (or focus) a card.
+function previewText(o){const c=o.card;if(!c||o.type==='cut')return '';
+  if(c.type==='prompt'&&PERIOD[c.id])return 'Plays like: about every '+Math.round(PERIOD[c.id]())+' s, '+c.desc.charAt(0).toLowerCase()+c.desc.slice(1);
+  if(c.type==='prompt')return 'Plays like: '+c.desc;
+  return 'Plays like: takes effect the moment you pick it. '+c.desc}
 function cardHTML(o,i){
   let name,desc,pay,tag;
   if(L('blind')&&o.type!=='cut')return `<button class="card" type="button" data-i="${i}" style="--c:var(${TYPE[o.type][1]})"><span class="top"><span class="cat">${TYPE[o.type][0]}</span><span class="tag">BLIND</span></span><span class="name">???</span><span class="desc">Blind Draft hides this card until you take it.</span><span class="pay">Everything pays ×1.25</span><span class="num">${coarse?'TAP TO ADD':'PRESS '+(i+1)}</span></button>`;
@@ -1547,13 +1821,22 @@ function cardHTML(o,i){
   else if(o.trig){const h=o.host;name=o.trig.name+' '+h.name;tag='REWIRES PROMPT';desc=h.name+' stops firing on its timer. It fires '+o.trig.text+' instead.';pay='Changes when it fires'}
   else if(o.type==='mod'){const h=o.host,prompt=h.type==='prompt';name=o.mod.name+' '+h.name;tag='ATTACHES TO '+TYPE[h.type][0].toUpperCase();
     if(o.mod.id==='score'){desc=h.name+' pays double.';pay='Score ×2 on this card'}
+    else if(o.mod.id==='lucky'){desc=h.name+' payouts have a 25% chance to pay triple.';pay='25% chance of ×3'}
     else{desc=h.mods[o.mod.id];pay=prompt?'Harder, so its bounty pays ×1.5':'No score change'}}
   else{const c=o.card;name=c.name;desc=c.desc;const old=slotHolder(c);tag=c.syn?'RARE':old?'REPLACES '+old.name.toUpperCase():'NEW';pay=c.syn?'Needs '+c.syn.map(x=>byId[x].name).join(' + '):c.earn?(c.type==='prompt'?'Bounty: ':'Income: ')+c.earn:'Does not score'}
   const TT=o.card&&o.card.syn&&o.type!=='cut'?['Synergy','--lilac']:TYPE[o.type];
-  return `<button class="card" type="button" data-i="${i}" style="--c:var(${TT[1]})">
-    <span class="top"><span class="cat">${TT[0]}</span><span class="tag">${tag}</span></span>
-    <span class="name">${name}</span><span class="desc">${desc}</span><span class="pay">${pay}</span><span class="num">${coarse?'TAP TO ADD':'PRESS '+(i+1)}</span></button>`;
+  const rar=o.type==='cut'?'common':o.card?rarityOf(o.card):'common';
+  // show the card this one replaces or changes, so you can see what you are affecting
+  const tgt=o.type==='cut'?null:(o.host||(o.card&&slotHolder(o.card)));
+  const orig=tgt?`<span class="orig">${o.host?'Changes':'Replaces'}<b>${tgt.name}</b>${tgt.desc}</span>`:'';
+  const pv=previewText(o);
+  const fl=(o.enh?`<span class="fl enh">★ Enhanced: ${o.card.earn?'pays ×1.25':'+1 reroll'}</span>`:'')+(o.ovl?`<span class="fl ovl">⚡ Overloaded: comes with ${o.freeMod.name}</span>`:'');
+  return `<button class="card r-${rar}${o.enh?' enh':''}${o.ovl?' ovl':''}" type="button" data-i="${i}" style="--c:var(${TT[1]})">
+    <span class="top"><span class="cat">${TT[0]}${rar!=='common'?' · '+rar:''}</span><span class="tag">${tag}</span></span>
+    <span class="name">${name}</span><span class="desc">${desc}</span>${orig}${fl}<span class="pay">${pay}</span>${pv?`<span class="prev">${pv}<i></i></span>`:''}<span class="num">${coarse?'TAP TO ADD':'PRESS '+(i+1)}</span></button>`;
 }
+function pickBuild(){const el=$('pickbuild');if(el)el.innerHTML=S.picks.length?'<b>Your build:</b> '+S.picks.map(id=>{const c=byId[id],m=modNames(id);return `<span class="chip" style="--c:var(${c.syn?'--lilac':TYPE[c.type][1]})">${c.name}${S.enh[id]?' ★':''}${S.ovl[id]?' ⚡':''}${m.length?' × '+m.join(' × '):''}</span>`}).join(''):''}
+let pickArm=0;
 function showPick(reroll){
   S.phase='pick';
   S.mode=nextIsCut()?'cut':'draft';
@@ -1566,48 +1849,52 @@ function showPick(reroll){
   $('cards').innerHTML=S.offers.map(cardHTML).join('');
   $('skip').hidden=S.mode!=='cut'||!!S.forceCut;
   $('reroll').hidden=S.pickCount<1;$('reroll').disabled=S.reroll<1;$('reroll').textContent='REROLL ('+S.reroll+' LEFT)';
-  $('pick').hidden=false;if(!reroll)snd(440,.1,'triangle',.05,220);
+  pickBuild();$('pick').hidden=false;if(!reroll)snd(440,.1,'triangle',.05,220);
+  if(!reroll&&S.pickCount>0){pickArm=performance.now()+750;$('cards').style.pointerEvents='none';setTimeout(()=>{$('cards').style.pointerEvents=''},750)} // short lead-in so a rolling thumb can't tap a card by accident
 }
 function removeCard(id){
-  for(const x of [id].concat(CARDS.filter(c=>c.syn&&L(c.id)&&c.syn.includes(id)).map(c=>c.id))){S.lv[x]=0;delete S.mods[x];delete S.trig[x];S.picks=S.picks.filter(y=>y!==x);delete timers[x]}}
+  for(const x of [id].concat(CARDS.filter(c=>c.syn&&L(c.id)&&c.syn.includes(id)).map(c=>c.id))){S.lv[x]=0;delete S.enh[x];delete S.ovl[x];delete S.mods[x];delete S.trig[x];S.picks=S.picks.filter(y=>y!==x);delete timers[x]}}
 function choose(i){
-  const o=S.offers[i];if(!o||S.phase!=='pick')return;
+  const o=S.offers[i];if(!o||S.phase!=='pick'||performance.now()<pickArm)return;
   if(o.type==='cut'){removeCard(o.card.id);if(S.forceCut){S.forceCut=false;removeCard('garage');chips();S.pickCount++;$('pick').hidden=true;return resumePlay()}S.cutAt=S.pickCount;snd(260,.2,'sawtooth',.06,-120);chips();return showPick(true)}
   lastShown=S.offers.filter(x=>x!==o&&x.card).map(x=>x.card.id);for(const id of lastShown)passed[id]=(passed[id]||0)+1;
   if(o.trig)S.trig[o.host.id]=o.trig.id;
   else if(o.type==='mod'){const m=S.mods[o.host.id]||(S.mods[o.host.id]={});m[o.mod.id]=(m[o.mod.id]||0)+1;S.lastMod={host:o.host.id,mod:o.mod.id}}
   else{const c=o.card;
     const old=slotHolder(c);if(old){removeCard(old.id);banner(c.name+' replaces '+old.name)}
-    S.lv[c.id]=1;S.picks.push(c.id);S.hearts=Math.min(S.hearts,maxH());if(c.id==='garage')S.forceCut=true;if(c.id==='countdown')S.clock=Math.max(S.clock,90);if(c.syn&&!save.syn.includes(c.id)){save.syn.push(c.id);persist()}}
+    S.lv[c.id]=1;S.picks.push(c.id);S.hearts=Math.min(S.hearts,maxH());
+    if(o.enh){S.enh[c.id]=true;if(!c.earn)S.reroll++;banner('Enhanced')}
+    if(o.ovl&&o.freeMod){const mm=S.mods[c.id]||(S.mods[c.id]={});mm[o.freeMod.id]=(mm[o.freeMod.id]||0)+1;S.ovl[c.id]=true;banner('Overloaded: '+o.freeMod.name)}
+    if(c.id==='garage')S.forceCut=true;if(c.id==='countdown')S.clock=Math.max(S.clock,90);if(c.syn&&!save.syn.includes(c.id)){save.syn.push(c.id);persist()}}
   S.pickCount++;if(S.pickCount%10===0)S.reroll++;snd(660,.12,'square',.05,400);
   if(--S.pickLeft>0){S.offers=S.offers.filter(x=>x!==o&&(x.card?!L(x.card.id):true));if(S.offers.length){$('pickeyebrow').textContent='Pick one more';$('pickhead').textContent='Pick one more.';$('cards').innerHTML=S.offers.map(cardHTML).join('');chips();return}}
   if(L('compound'))S.infl*=1.05;
   if(L('pact')){const pr=CARDS.filter(c=>c.type==='prompt'&&FIRE[c.id]&&!L(c.id)&&unlocked(c.id)&&!excluded(c));if(pr.length){const c=pr[Math.floor(rng()*pr.length)];S.lv[c.id]=1;S.picks.push(c.id);floater('Pact: '+c.name,player.p.clone(),true)}}
-  if(L('echo')&&S.pickCount%3===0&&S.lastMod){const m=S.lastMod,hosts=S.picks.filter(id=>id!==m.host&&stacks(id,m.mod)<2&&(m.mod==='score'?byId[id].earn:byId[id].mods&&byId[id].mods[m.mod]));
+  if(L('echo')&&S.pickCount%3===0&&S.lastMod){const m=S.lastMod,hosts=S.picks.filter(id=>id!==m.host&&stacks(id,m.mod)<2&&((m.mod==='score'||m.mod==='lucky')?byId[id].earn:byId[id].mods&&byId[id].mods[m.mod]));
     if(hosts.length){const t=hosts[Math.floor(rng()*hosts.length)],mm=S.mods[t]||(S.mods[t]={});mm[m.mod]=(mm[m.mod]||0)+1;banner('Echo: '+MODS.find(x=>x.id===m.mod).name+' '+byId[t].name)}}
   $('pick').hidden=true;chips();
-  if(S.pickCount>1)S.hearts=Math.min(maxH(),S.hearts+1);
   if(L('countdown'))S.clock=Math.min(180,S.clock+10);
   resumePlay();
+  if(S.pickCount>1&&S.hearts<maxH())spawnHeart(16); // the pick's heart now drops onto the plate
 }
 
 /* ---------- flow ---------- */
 // After a choice: apply the new card and carry on from exactly where play stopped.
 function resumePlay(){
-  applyStatics();timers.pick=PICK_EVERY*draftNeed();S.pickBase=S.earned;S.koSince=0;S.lapN=0;lapMk.visible=false;S.cleanT=0;jumpQ=false;
+  applyStatics();timers.pick=PICK_EVERY*draftNeed();S.pickBase=S.earned;S.koSince=0;S.lapN=0;lapMk.visible=false;S.cleanT=0;zone.on=false;S.hitsSince=0;S.chainN=0;S.chainLast=-9;S.goalT=30;jumpQ=false;
   if(L('foresight'))S.nextOffers=pickOffers();else S.nextOffers=null;for(const k in actQ)actQ[k]=false;
   if(S.t===0){const[sx,sz]=ARENA.nearest(0,0,2);player.p.set(sx,player.r+ARENA.fy(sx,sz),sz);player.v.set(0,0,0);banner('Go!')}
   player.inv=Math.max(player.inv,1);S.phase='play';hudCache='';last=performance.now();if(coarse)$('touch').hidden=false;
 }
 function startBoss(){
   S.boss=true;S.bossDown=false;S.bossN++;S.bossEnd=S.t+BOSS_LEN;ev.bossT=3;spawnBoss();
-  const w=S.picks.map(id=>byId[id]).find(c=>c.type==='prompt');banner('Boss: '+(w?w.word:'Crunch')+' Deadline');snd(110,.8,'sawtooth',.1,-50);nz(.8,.2,'lowpass',300,80);
+  const w=S.picks.map(id=>byId[id]).find(c=>c.type==='prompt');banner('Boss: '+(w?w.word:'Crunch')+' Deadline'+(S.bossN%3===2?' (charger)':S.bossN%3===0?' (heavy)':''));snd(110,.8,'sawtooth',.1,-50);nz(.8,.2,'lowpass',300,80);
 }
 function endBoss(){
   S.boss=false;S.nextBoss+=BOSS_EVERY;
   for(const b of bodies)if(b.kind==='boss'){b.dead=true;world.remove(b.mesh)}bodies=bodies.filter(b=>!b.dead);
   if(!S.bossDown){bossPay(150,player.p.clone());banner('Boss survived')}
-  S.hearts=maxH();timers.pick=Math.min(timers.pick,1.5);
+  for(let i=0,n=Math.min(3,maxH()-S.hearts);i<n;i++)spawnHeart(20);timers.pick=Math.min(timers.pick,1.5);
 }
 function gameTitle(){
   const P=S.picks.map(id=>byId[id]),pr=P.find(c=>c.type==='prompt'),go=P.find(c=>c.goal),w=P.filter(c=>c.type==='rule'&&c.word&&!c.goal).pop();
@@ -1643,16 +1930,16 @@ function gameOver(){
 function startRun(mode,data){
   if(typeof mode!=='string')mode='normal';audioInit();
   Object.assign(S,{run:mode,day:today(),seed:mode==='daily'?today():mode==='code'?data.seed:(Math.random()*2147483647)|0,code:'',
-    picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,earned:0,pickBase:0,koSince:0,lapN:0,cleanT:0,unbanked:0,clock:60,peak:0,rentT:60,rentBase:0,infl:1,inflF:1,forceCut:false,lastMod:null,nextOffers:null,pickLeft:1,reroll:1,pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:BOSS_EVERY,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99});
-  lastShown=[];passed={};lbPosted=false;seedRng(S.seed);musicSetup();
+    picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,earned:0,pickBase:0,koSince:0,lapN:0,cleanT:0,unbanked:0,clock:60,peak:0,rentT:60,rentBase:0,infl:1,inflF:1,forceCut:false,lastMod:null,nextOffers:null,pickLeft:1,reroll:1,rrN:{},enh:{},ovl:{},pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:BOSS_EVERY,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99});
+  lastShown=[];passed={};lbPosted=false;seedRng(S.seed);buildSky(S.seed);musicSetup();
   resetRunState();player.p.set(0,player.r,0);player.v.set(0,0,0);
   $('title').hidden=true;$('over').hidden=true;$('pick').hidden=true;$('hud').hidden=false;hudCache='';
-  if(mode==='code'){for(const c of data.cards){S.lv[c.id]=1;S.picks.push(c.id);if(Object.keys(c.mods).length)S.mods[c.id]=c.mods;if(c.trig)S.trig[c.id]=c.trig}
+  if(mode==='code'){for(const c of data.cards){S.lv[c.id]=1;S.picks.push(c.id);if(Object.keys(c.mods).length)S.mods[c.id]=c.mods;if(c.trig)S.trig[c.id]=c.trig;if(c.enh)S.enh[c.id]=true;if(c.ovl)S.ovl[c.id]=true}
     S.pickCount=S.cutAt=S.picks.length;chips();return resumePlay()}
   chips();showPick();
 }
 function playCode(e){if(e)e.preventDefault();const d=decodeBuild($('codein').value);$('codeerr').hidden=!!d;
-  if(!d){$('codeerr').textContent='That code does not look right. Build codes start with fc1-';return}startRun('code',d)}
+  if(!d){$('codeerr').textContent='That code does not look right. Build codes start with fc1- or fc2-';return}startRun('code',d)}
 function copyText(text,btn,fallbackEl){const done=()=>btn.textContent='COPIED',sel=()=>{const r=document.createRange();r.selectNodeContents(fallbackEl);const s=getSelection();s.removeAllRanges();s.addRange(r);btn.textContent='SELECTED · PRESS COPY'};
   try{navigator.clipboard.writeText(text).then(done,sel)}catch(e){sel()}}
 function readHash(){if(decodeBuild(location.hash)){$('codein').value=location.hash.replace(/^#/,'');$('playcode').classList.remove('ghost')}}
@@ -1662,7 +1949,7 @@ $('codeform').addEventListener('submit',playCode);
 $('unlockall').onclick=()=>{save.all=!save.all;persist();refreshTitle()};
 $('home').onclick=()=>{S.phase='title';$('over').hidden=true;$('hud').hidden=true;clearEntities();removePickup();refreshTitle();readHash();refreshBoard();$('title').hidden=false};
 $('copycode').onclick=()=>copyText(S.code,$('copycode'),$('sheet'));
-addEventListener('hashchange',readHash);readHash();refreshTitle();refreshBoard();
+addEventListener('hashchange',readHash);readHash();refreshTitle();refreshBoard();buildFeedback();
 $('submitbox').addEventListener('submit',submitScore);
 $('start').onclick=()=>startRun('normal');$('again').onclick=()=>startRun(S.run==='daily'?'daily':'normal');$('skip').onclick=()=>{if(S.mode==='cut'){S.cutAt=S.pickCount;showPick(true)}};
 $('cards').addEventListener('click',e=>{const b=e.target.closest('.card');if(b)choose(+b.dataset.i)});
