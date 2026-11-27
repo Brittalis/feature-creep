@@ -526,6 +526,7 @@ const RELEASES=[
     'Stage changes: Arena Swap warns you, morphs the plate, and fires about every 35 s instead of 14. Shape cards morph in too.',
     'New: Wet Paint for Painter, three boss types (tracker, charger, heavy) that dodge bumpers and the edge, and earnable rerolls.',
     'Cards: rarity tiers with glints, the card you replace or change shown on the card, hover previews, and your build shown at every pick.',
+    'Balance: the game now gets steadily harder. Prompts fire faster, the plate erodes after 5 min, and from 8 min Overtime drains a heart on a shrinking timer.',
     'Hearts now drop onto the plate as pickups instead of being given automatically.',
     'Mobile: tap anywhere to jump, optional tilt steering in the pause menu, and a short lead-in so you cannot tap a card by accident.',
     'Fixes: Painter follows arena size, fog works from the top-down camera, Flood no longer costs two hearts, off-map falls are quicker, sound effects no longer silence the music.',
@@ -911,7 +912,7 @@ function resetRunState(){
   Object.assign(ev,{flipPending:false,flipT:0,stampT:-1,shrinkCycle:0,shrinkStart:0,gustT:0,mirrorT:0,lavaT:0,pinT:-9,pinStreak:0,bossT:3,bossI:0});
   S.lastFall=-1;S.lastScore=-9;S.streak=0;lapMk.visible=false;bankMk.visible=false;
   crumb.fill(0);pitList=[];tw.t=0;tw.mesh.visible=false;water.visible=false;floodPads=[];buildPads();boltMk.visible=false;ARENA.rot=0;plate.rotation.y=0;
-  Object.assign(ev,{quakeT:0,floodT:0,floodPeaked:false,swapT:0,morph:null,tvx:0,tvz:0,wobOn:0});
+  Object.assign(ev,{quakeT:0,floodT:0,floodPeaked:false,swapT:0,otT:undefined,morph:null,tvx:0,tvz:0,wobOn:0});
   removePickups();applyStatics();
 }
 
@@ -1217,13 +1218,16 @@ const nx_=(c,d2)=>c/Math.sqrt(d2);
 const wrap=a=>{a=(a+Math.PI)%(2*Math.PI);if(a<0)a+=2*Math.PI;return a-Math.PI};
 function update(dt){
   S.t+=dt;
-  const ramp=(1+Math.max(0,S.t-120)/400)*(S.boss?1.6:1);
+  const ramp=(1+Math.max(0,S.t-120)/250+Math.pow(Math.max(0,S.t-360)/300,2))*(S.boss?1.6:1); // pressure keeps climbing, faster after 6 min
   const g=G0*(L('moon')?.42:1), ice=L('ice'), fr=ice?.45:L('sticky')?14:5, bouncy=L('bouncy');
   // plate radius
   let Rb=R0*(L('tiny')?.8:1)*(L('mega')?1.45:1);
   if(L('shrink')){const ph=S.t*.8*mv('shrink','speed');Rb*=1-.26*(.5-.5*Math.cos(ph));
     const cyc=Math.floor(ph/6.283);if(cyc>ev.shrinkCycle){ev.shrinkCycle=cyc;snd(260,.45,'sine',.06,-130);if(S.lastFall<ev.shrinkStart)add(PAY.shrink,'shrink',player.p.clone());ev.shrinkStart=S.t}}
+  if(S.t>300)Rb*=Math.max(.6,1-(S.t-300)/1000); // the plate slowly erodes after 5 min
   Rb*=morphK(dt);R=Rb; plate.scale.set(R/R0,1,R/R0);
+  // Overtime: from 8 min a heart drains on a shrinking timer, so no build can survive forever
+  if(S.t>480){ev.otT=(ev.otT??30)-dt;if(ev.otT<=0){ev.otT=Math.max(6,30-(S.t-480)/20);banner('Overtime');loseHeart();flash();shake=.5;snd(110,.4,'sawtooth',.08,-60);if(S.hearts<=0||L('countdown')&&S.clock<=0){gameOver();return}}}
   // tilt
   // tilt: Tilt-a-World circles, Seesaw follows the weight, Wobble shudders
   let gx=0,gz=0;
