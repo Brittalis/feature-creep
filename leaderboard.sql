@@ -6,7 +6,7 @@ create table public.scores (
   sprints    integer not null check (sprints >= 1),
   picks      integer not null default 0 check (picks between 0 and 1000),
   mode       text not null default 'normal' check (mode in ('normal','daily')),
-  code       text not null default '' check (char_length(code) <= 400),
+  code       text not null default '' check (char_length(code) <= 600),
   version    text not null default '1.0' check (char_length(version) <= 16),
   created_at timestamptz not null default now()
 );
@@ -37,9 +37,15 @@ create table if not exists public.feedback (
   id         bigint generated always as identity primary key,
   message    text not null check (char_length(message) between 1 and 1000),
   version    text not null default '' check (char_length(version) <= 16),
-  code       text not null default '' check (char_length(code) <= 400),
+  code       text not null default '' check (char_length(code) <= 600),
   created_at timestamptz not null default now()
 );
 alter table public.feedback enable row level security;
 create policy "public insert feedback" on public.feedback for insert to anon with check (true);
 grant insert on public.feedback to anon;
+
+-- Build codes got longer in 1.3 (fc2 format). Existing projects: run once.
+-- alter table public.scores drop constraint if exists scores_code_check;
+-- alter table public.scores add constraint scores_code_check check (char_length(code) <= 600);
+-- alter table public.feedback drop constraint if exists feedback_code_check;
+-- alter table public.feedback add constraint feedback_code_check check (char_length(code) <= 600);
