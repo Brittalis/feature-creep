@@ -31,3 +31,15 @@ grant usage on sequence public.scores_id_seq to anon;
 -- Migration for an existing table (run once). Existing scores are counted as version 1.0.
 -- alter table public.scores add column version text not null default '1.0' check (char_length(version) <= 16);
 -- create index scores_version_score_idx on public.scores (version, score desc);
+
+-- Feedback box (1.2+). Run once. Anyone may send feedback; only you can read it, in the dashboard (Table Editor -> feedback).
+create table if not exists public.feedback (
+  id         bigint generated always as identity primary key,
+  message    text not null check (char_length(message) between 1 and 1000),
+  version    text not null default '' check (char_length(version) <= 16),
+  code       text not null default '' check (char_length(code) <= 400),
+  created_at timestamptz not null default now()
+);
+alter table public.feedback enable row level security;
+create policy "public insert feedback" on public.feedback for insert to anon with check (true);
+grant insert on public.feedback to anon;
