@@ -437,6 +437,13 @@ const LIKES={grapple:TARGETS,bomb:TARGETS.concat('crates'),crates:['dash','slam'
   air:['moon','pogo','bouncy'],chasers:['dash','slam','orbit','big'],stampede:['dash','slam','big'],gold:['magnet','boom','combo'],lava:['pogo','moon','slam'],laser:['pogo','moon','air'],flip:['air','slam'],mines:['chasers','sumo']};
 for(const c of CARDS){const r=REQ[c.id];c.likes=LIKES[c.id];
   if(r)c.req=()=>r==='notko'?!['sumo','chasers','matador','headhunt'].some(L):r==='mods'?Object.keys(S.mods).length>0:r==='five'?S.picks.length>=5:r==='prompt'?CARDS.some(x=>x.type==='prompt'&&L(x.id)):r==='goal'?CARDS.some(x=>x.goal&&L(x.id)):r.some(L)}
+const RARITY={};
+for(const[t,ids]of Object.entries({
+ common:'orbs hill air combo greed medkit magnet ice sticky moon tiny night square donut runway twin top dizzy worm daynight fog storm rim gust shrink mirror lava gold laser',
+ uncommon:'sumo tag courier paint juggle crates pogo big dash slam blaster bumpers djump blink momentum hunter glass tilt seesaw wobble turntable conveyor crumble fence wrap bowl dome mega bouncy boom meteors flip turrets mines quake flood swap pits islands',
+ rare:'orbit grapple bomb quota headhunt lap clean runaway skyfall quick blind double wild pact foresight bank rent countdown decay sudden chasers stampede tornado rewire echo inflation garage'}))
+  for(const id of ids.split(' '))RARITY[id]=t;
+for(const c of CARDS)c.rarity=c.syn?'rare':RARITY[c.id]||'uncommon';
 const ORDER=['rule','prompt','mod'];
 const ENV_SLOTS=['shape','floor','tilt','edge','scale','sky'],META_SLOTS=['draft','style','economy'];
 const isMeta=c=>META_SLOTS.includes(c.slot);
@@ -449,7 +456,7 @@ const maxH=()=>L('sudden')?1:L('glass')?3:MAXH;
 const VERBS=[{id:'dash',key:'Shift',label:'Dash'},{id:'grapple',key:'E',label:'Hook'},{id:'bomb',key:'F',label:'Bomb'},{id:'blink',key:'Q',label:'Blink'}];
 
 /* ---------- state ---------- */
-const S={phase:'title',run:'normal',seed:1,day:0,code:'',picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,offers:[],pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:200,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99};
+const S={phase:'title',run:'normal',seed:1,day:0,code:'',picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,reroll:1,offers:[],pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:200,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99,copies:{},mcop:{}};
 const L=id=>S.lv[id]?1:0;
 const stacks=(id,stat)=>(S.mods[id]||{})[stat]||0;
 const MF=Object.fromEntries(MODS.map(m=>[m.id,m.f]));
@@ -491,6 +498,11 @@ const LB={url:'https://wfzywfykvxyhjcigeimr.supabase.co',key:'sb_publishable_Ovq
 /* RELEASES: newest first. EVERY merge adds a new entry on top: a bumped version (1.1.1, 1.1.2, ...) plus its "What's new" notes.
    The top entry is the current version. Scores are stamped with it and the title screen shows its notes. */
 const RELEASES=[
+  {v:'1.2',notes:[
+    'Every card has a rarity: common, uncommon or rare. Rares change the game most.',
+    'Cards are drawn from a pool with limited copies. Commons have 3, uncommons 2, rares 1; taking a card uses one up.',
+    'Rare cards are dealt about 10% of the time, uncommons 27%, commons 63%.',
+    'Balance change: card draws differ, so this starts a new Current Version board.']},
   {v:'1.1.4',notes:[
     'Internal: pull requests must bump the version and add What\'s new notes.']},
   {v:'1.1.3',notes:[
@@ -1499,23 +1511,35 @@ function modOffers(n=3){
   for(const id of S.picks){const c=byId[id];
     for(const m of MODS){const ok=m.id==='score'?!!c.earn:!!(c.mods&&c.mods[m.id]);if(ok&&stacks(id,m.id)<2&&!(S.trig[id]==='hit'&&FREQ[id]===m.id))pairs.push({type:'mod',mod:m,host:c,k:m.id})}
     if(FIRE[id]&&!S.trig[id])for(const t of TRIGS)if((!t.req||t.req())&&!(t.id==='hit'&&FREQ[id]&&stacks(id,FREQ[id])))pairs.push({type:'mod',trig:t,host:c,k:'trig'})}
-  shuffle(pairs);const out=[];
-  for(const p of pairs)if(out.length<n&&!out.some(o=>o.k===p.k||o.host===p.host))out.push(p);
-  for(const p of pairs)if(out.length<n&&!out.includes(p)&&!out.some(o=>o.k===p.k))out.push(p);
-  for(const p of pairs)if(out.length<n&&!out.includes(p)&&!(p.trig&&out.some(o=>o.trig)))out.push(p);
+  const left=k=>S.mcop[k]||0,out=[];
+  if(!pairs.some(p=>left(p.k)>0))for(const k in MOD_COPIES)S.mcop[k]=MOD_COPIES[k]; // pool ran dry: restock
+  const tryAdd=ok=>{const c=cascade(pairs.filter(p=>!out.includes(p)&&left(p.k)>0&&ok(p)),p=>MOD_TIER[p.k],p=>left(p.k));if(c)out.push(c);return !!c};
+  for(const ok of [p=>!out.some(o=>o.k===p.k||o.host===p.host),p=>!out.some(o=>o.k===p.k),p=>!(p.trig&&out.some(o=>o.trig))])
+    while(out.length<n&&tryAdd(ok));
   return out;
 }
 let lastShown=[],passed={};
-// Weighted draw: cards that combine with what you own come up more; cards you just passed on come up less.
-function wpick(pool,n,ok){const out=[],p=pool.slice();
-  while(out.length<n&&p.length){let tot=0;const w=p.map(c=>{const x=(c.likes&&c.likes.some(L)?3:1)*(lastShown.includes(c.id)?.25:1)*Math.pow(.5,passed[c.id]||0);tot+=x;return x});
-    let r=rng()*tot,i=0;while(i<p.length-1&&(r-=w[i])>0)i++;const c=p.splice(i,1)[0];if(!ok||ok(c,out))out.push(c)}
+/* Cascading item roll. Tier odds are fixed (rare, then uncommon, else common) and never depend on what is left,
+   so removing a card can't shift its tier's odds. A chosen tier rolls over literal card copies; an empty tier is a miss. */
+const TIERS=['rare','uncommon','common'],TIER_ODDS={rare:.10,uncommon:.30},COPIES={common:3,uncommon:2,rare:1},LIKE_BONUS=2;
+const MOD_TIER={count:'common',speed:'common',size:'uncommon',force:'uncommon',score:'rare',trig:'rare'};
+const MOD_COPIES={count:3,speed:3,size:2,force:2,score:1,trig:1};
+const freshCopies=()=>{const o={};for(const c of CARDS)if(!c.syn)o[c.id]=COPIES[c.rarity];return o};
+function cascade(items,tier,n){ // items: candidates; tier(i)->tier name; n(i)->copies. Returns one item or undefined.
+  const s=rng()<TIER_ODDS.rare?0:rng()<TIER_ODDS.uncommon?1:2;
+  for(let k=0;k<3;k++){const t=TIERS[(s+k)%3],sub=items.filter(i=>tier(i)===t&&n(i)>0);if(!sub.length)continue;
+    let r=rng()*sub.reduce((a,i)=>a+n(i),0);for(const i of sub){r-=n(i);if(r<0)return i}return sub[sub.length-1]}}
+// Copies in the subtable: what is left in the pool, +bonus if it likes something you own, shrunk if passed, 1 if just shown.
+const cardCopies=c=>{if(lastShown.includes(c.id))return 1;const n=(S.copies[c.id]||0)+(c.likes&&c.likes.some(L)?LIKE_BONUS:0);return Math.max(1,Math.ceil(n/Math.pow(2,passed[c.id]||0)))};
+function drawCards(pool,n,ok){const out=[],p=pool.filter(c=>S.copies[c.id]>0);
+  while(out.length<n){const c=cascade(p.filter(x=>!ok||ok(x,out)),x=>x.rarity,cardCopies);if(!c)break;out.push(c);p.splice(p.indexOf(c),1)}
   return out}
 function typeOffers(type,n=3){
   if(type==='mod')return modOffers(n);
-  let pool=CARDS.filter(c=>c.type===type&&!c.syn&&!L(c.id)&&unlocked(c.id)&&!excluded(c)&&(!c.req||c.req()));
-  if(S.pickCount===0)pool=pool.filter(c=>c.goal);
-  const out=wpick(pool,n,(c,out)=>!(c.cam&&out.some(o=>o.cam))&&!(isEnv(c)&&out.some(isEnv))&&!(isMeta(c)&&out.some(isMeta))&&!(c.goal&&S.pickCount&&out.some(o=>o.goal))).map(card=>({type,card}));
+  const elig=()=>{let p=CARDS.filter(c=>c.type===type&&!c.syn&&!L(c.id)&&unlocked(c.id)&&!excluded(c)&&(!c.req||c.req()));if(S.pickCount===0)p=p.filter(c=>c.goal);return p};
+  let pool=elig();
+  if(!pool.some(c=>S.copies[c.id]>0)){for(const c of pool)S.copies[c.id]=COPIES[c.rarity];} // pool ran dry: restock
+  const out=drawCards(pool,n,(c,out)=>!(c.cam&&out.some(o=>o.cam))&&!(isEnv(c)&&out.some(isEnv))&&!(isMeta(c)&&out.some(isMeta))&&!(c.goal&&S.pickCount&&out.some(o=>o.goal))).map(card=>({type,card}));
   if(type==='rule'&&S.pickCount){const syn=CARDS.filter(c=>c.syn&&!L(c.id)&&c.syn.every(L)&&!excluded(c));
     if(syn.length&&rng()<.75){const o={type,card:syn[Math.floor(rng()*syn.length)]};if(out.length<n)out.unshift(o);else out[0]=o}}
   return out;
@@ -1544,11 +1568,11 @@ function cardHTML(o,i){
   if(o.type==='cut'){const c=o.card,m=modNames(c.id);name='Cut '+c.name;desc=c.desc;tag=TYPE[c.type][0].toUpperCase();
     const dep=CARDS.filter(x=>x.syn&&L(x.id)&&x.syn.includes(c.id)).map(x=>x.name);
     pay=(dep.length?'Also removes '+dep.join(', ')+'. ':'')+(m.length?'Loses '+m.join(', ')+'. ':'')+(c.earn?'Earned '+fmt(S.by[c.id]||0)+' so far':'Does not score')}
-  else if(o.trig){const h=o.host;name=o.trig.name+' '+h.name;tag='REWIRES PROMPT';desc=h.name+' stops firing on its timer. It fires '+o.trig.text+' instead.';pay='Changes when it fires'}
-  else if(o.type==='mod'){const h=o.host,prompt=h.type==='prompt';name=o.mod.name+' '+h.name;tag='ATTACHES TO '+TYPE[h.type][0].toUpperCase();
+  else if(o.trig){const h=o.host;name=o.trig.name+' '+h.name;tag='RARE · REWIRES PROMPT';desc=h.name+' stops firing on its timer. It fires '+o.trig.text+' instead.';pay='Changes when it fires'}
+  else if(o.type==='mod'){const h=o.host,prompt=h.type==='prompt';name=o.mod.name+' '+h.name;tag=MOD_TIER[o.mod.id].toUpperCase()+' · ATTACHES TO '+TYPE[h.type][0].toUpperCase();
     if(o.mod.id==='score'){desc=h.name+' pays double.';pay='Score ×2 on this card'}
     else{desc=h.mods[o.mod.id];pay=prompt?'Harder, so its bounty pays ×1.5':'No score change'}}
-  else{const c=o.card;name=c.name;desc=c.desc;const old=slotHolder(c);tag=c.syn?'RARE':old?'REPLACES '+old.name.toUpperCase():'NEW';pay=c.syn?'Needs '+c.syn.map(x=>byId[x].name).join(' + '):c.earn?(c.type==='prompt'?'Bounty: ':'Income: ')+c.earn:'Does not score'}
+  else{const c=o.card;name=c.name;desc=c.desc;const old=slotHolder(c);tag=c.syn?'SYNERGY':c.rarity.toUpperCase()+' · '+(old?'REPLACES '+old.name.toUpperCase():'NEW');pay=c.syn?'Needs '+c.syn.map(x=>byId[x].name).join(' + '):c.earn?(c.type==='prompt'?'Bounty: ':'Income: ')+c.earn:'Does not score'}
   const TT=o.card&&o.card.syn&&o.type!=='cut'?['Synergy','--lilac']:TYPE[o.type];
   return `<button class="card" type="button" data-i="${i}" style="--c:var(${TT[1]})">
     <span class="top"><span class="cat">${TT[0]}</span><span class="tag">${tag}</span></span>
@@ -1574,15 +1598,15 @@ function choose(i){
   const o=S.offers[i];if(!o||S.phase!=='pick')return;
   if(o.type==='cut'){removeCard(o.card.id);if(S.forceCut){S.forceCut=false;removeCard('garage');chips();S.pickCount++;$('pick').hidden=true;return resumePlay()}S.cutAt=S.pickCount;snd(260,.2,'sawtooth',.06,-120);chips();return showPick(true)}
   lastShown=S.offers.filter(x=>x!==o&&x.card).map(x=>x.card.id);for(const id of lastShown)passed[id]=(passed[id]||0)+1;
-  if(o.trig)S.trig[o.host.id]=o.trig.id;
-  else if(o.type==='mod'){const m=S.mods[o.host.id]||(S.mods[o.host.id]={});m[o.mod.id]=(m[o.mod.id]||0)+1;S.lastMod={host:o.host.id,mod:o.mod.id}}
+  if(o.trig){S.trig[o.host.id]=o.trig.id;S.mcop.trig=Math.max(0,S.mcop.trig-1)}
+  else if(o.type==='mod'){S.mcop[o.mod.id]=Math.max(0,(S.mcop[o.mod.id]||0)-1);const m=S.mods[o.host.id]||(S.mods[o.host.id]={});m[o.mod.id]=(m[o.mod.id]||0)+1;S.lastMod={host:o.host.id,mod:o.mod.id}}
   else{const c=o.card;
     const old=slotHolder(c);if(old){removeCard(old.id);banner(c.name+' replaces '+old.name)}
-    S.lv[c.id]=1;S.picks.push(c.id);S.hearts=Math.min(S.hearts,maxH());if(c.id==='garage')S.forceCut=true;if(c.id==='countdown')S.clock=Math.max(S.clock,90);if(c.syn&&!save.syn.includes(c.id)){save.syn.push(c.id);persist()}}
+    if(S.copies[c.id]>0)S.copies[c.id]--;S.lv[c.id]=1;S.picks.push(c.id);S.hearts=Math.min(S.hearts,maxH());if(c.id==='garage')S.forceCut=true;if(c.id==='countdown')S.clock=Math.max(S.clock,90);if(c.syn&&!save.syn.includes(c.id)){save.syn.push(c.id);persist()}}
   S.pickCount++;if(S.pickCount%10===0)S.reroll++;snd(660,.12,'square',.05,400);
   if(--S.pickLeft>0){S.offers=S.offers.filter(x=>x!==o&&(x.card?!L(x.card.id):true));if(S.offers.length){$('pickeyebrow').textContent='Pick one more';$('pickhead').textContent='Pick one more.';$('cards').innerHTML=S.offers.map(cardHTML).join('');chips();return}}
   if(L('compound'))S.infl*=1.05;
-  if(L('pact')){const pr=CARDS.filter(c=>c.type==='prompt'&&FIRE[c.id]&&!L(c.id)&&unlocked(c.id)&&!excluded(c));if(pr.length){const c=pr[Math.floor(rng()*pr.length)];S.lv[c.id]=1;S.picks.push(c.id);floater('Pact: '+c.name,player.p.clone(),true)}}
+  if(L('pact')){const pr=CARDS.filter(c=>c.type==='prompt'&&FIRE[c.id]&&!L(c.id)&&unlocked(c.id)&&!excluded(c));const c=drawCards(pr,1)[0]||pr[Math.floor(rng()*pr.length)];if(c){S.copies[c.id]=Math.max(0,S.copies[c.id]-1);S.lv[c.id]=1;S.picks.push(c.id);floater('Pact: '+c.name,player.p.clone(),true)}}
   if(L('echo')&&S.pickCount%3===0&&S.lastMod){const m=S.lastMod,hosts=S.picks.filter(id=>id!==m.host&&stacks(id,m.mod)<2&&(m.mod==='score'?byId[id].earn:byId[id].mods&&byId[id].mods[m.mod]));
     if(hosts.length){const t=hosts[Math.floor(rng()*hosts.length)],mm=S.mods[t]||(S.mods[t]={});mm[m.mod]=(mm[m.mod]||0)+1;banner('Echo: '+MODS.find(x=>x.id===m.mod).name+' '+byId[t].name)}}
   $('pick').hidden=true;chips();
@@ -1643,7 +1667,7 @@ function gameOver(){
 function startRun(mode,data){
   if(typeof mode!=='string')mode='normal';audioInit();
   Object.assign(S,{run:mode,day:today(),seed:mode==='daily'?today():mode==='code'?data.seed:(Math.random()*2147483647)|0,code:'',
-    picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,earned:0,pickBase:0,koSince:0,lapN:0,cleanT:0,unbanked:0,clock:60,peak:0,rentT:60,rentBase:0,infl:1,inflF:1,forceCut:false,lastMod:null,nextOffers:null,pickLeft:1,reroll:1,pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:BOSS_EVERY,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99});
+    picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,earned:0,pickBase:0,koSince:0,lapN:0,cleanT:0,unbanked:0,clock:60,peak:0,rentT:60,rentBase:0,infl:1,inflF:1,forceCut:false,lastMod:null,nextOffers:null,pickLeft:1,reroll:1,pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:BOSS_EVERY,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99,copies:freshCopies(),mcop:Object.assign({},MOD_COPIES)});
   lastShown=[];passed={};lbPosted=false;seedRng(S.seed);musicSetup();
   resetRunState();player.p.set(0,player.r,0);player.v.set(0,0,0);
   $('title').hidden=true;$('over').hidden=true;$('pick').hidden=true;$('hud').hidden=false;hudCache='';
