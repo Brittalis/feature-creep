@@ -457,16 +457,22 @@ const CARDS=[
  {id:'quakerider',type:'rule',syn:['quake','pogo'],name:'Quake Rider',desc:'Pogo bounces during a quake pay.',word:'Rocking'},
  {id:'tamer',type:'rule',syn:['tornado','orbit'],name:'Tornado Tamer',desc:'Wrecking balls reach 1.6× further in a twister, and twisters pay double.',word:'Twisting'},
  {id:'mirrormatch',type:'rule',syn:['mirror','tag'],name:'Mirror Match',desc:'Runners are worth triple while your controls are flipped.',word:'Mirrored'},
+ {id:'satellite',type:'rule',slot:'shape',shape:'satellite',name:'Satellite',desc:'A big plate with a small disk floating beside it. Jump the gap.',word:'Orbital'},
+ {id:'floatisland',type:'prompt',name:'Floating Island',desc:'A raised island drifts across the plate for 8 s. Stand on top of it for 3 s.',pitch:'island hopping',word:'Island',mods:{size:'The island is 1.6× wider.',speed:'Islands come 1.5× as often.'}},
+ {id:'bonusdisk',type:'rule',name:'Bonus Disk',desc:'A small disk marks the plate. Rule income is doubled while you stand in it. It moves every time you pick a card.',word:'Bonus'},
+ {id:'walls',type:'prompt',name:'Walls Rise',desc:'Walls rise out of the plate for 8 s. Get through without losing a heart.',pitch:'rising walls',word:'Walled',mods:{count:'Twice as many walls.',speed:'Walls come 1.5× as often.'}},
+ {id:'simon',type:'prompt',name:'Simon Says',desc:'Four pads flash in order. Step on them in the same order.',pitch:'copycat pads',word:'Simon',mods:{count:'One more step in every sequence.',speed:'Sequences come 1.5× as often.'}},
+ {id:'katamari',type:'rule',goal:1,excludes:['big','tiny'],name:'Katamari',desc:'Small things stick to you as you roll. You grow and score more, but a hit shakes some off.',word:'Rolling',pitch:'roll up everything',mods:{}},
 ];
 const byId=Object.fromEntries(CARDS.map(c=>[c.id,c]));
 // Earnable rerolls: these cards grant a reroll every Nth time they pay out.
 const REROLL_EVERY={gold:10,flip:3,mirror:2,lava:4,quake:2,tag:6};
 for(const id in REROLL_EVERY){const c=byId[id];if(c)c.desc+=' Every '+REROLL_EVERY[id]+(c.type==='prompt'?' bounties':' catches')+' earns a reroll.'}
 // Base payouts, tuned from bot-played sprints so one sprint of any scoring card is worth roughly the same.
-const PAY={orbs:10,sumo:30,hill:6,air:3,tag:28,courier:23,meteors:10,chasers:20,laser:25,flip:25,shrink:40,turrets:8,gold:5,stampede:35,gust:35,mines:8,mirror:40,lava:35,paint:2,wetpaint:.5,slipstream:2,quakerider:6,juggle:12,crates:12,quake:30,tornado:25,flood:30,swap:25,pits:10};
+const PAY={orbs:10,sumo:30,hill:6,air:3,tag:28,courier:23,meteors:10,chasers:20,laser:25,flip:25,shrink:40,turrets:8,gold:5,stampede:35,gust:35,mines:8,mirror:40,lava:35,paint:2,wetpaint:.5,slipstream:2,quakerider:6,floatisland:30,walls:30,simon:12,katamari:8,juggle:12,crates:12,quake:30,tornado:25,flood:30,swap:25,pits:10};
 const UNIT={orbs:['per orb',1],sumo:['per pin',1],hill:['per second inside',2],air:['per second airborne',4],tag:['per catch',1],courier:['per checkpoint',1],meteors:['per meteor dodged',1],
   chasers:['per bully knocked off',1],laser:['per bar jumped',1],flip:['per hiccup landed',1],shrink:['per squeeze survived',1],turrets:['per shot dodged',1],gold:['per coin',1],
-  stampede:['per stampede survived',1],gust:['per gust weathered',1],mines:['per mine that fizzles',1],mirror:['per flip survived',1],lava:['per zap jumped',1],paint:['per tile painted',1],wetpaint:['per painted tile, every 2 s',1],slipstream:['per 0.1 s of dashing',1],quakerider:['per bounce during a quake',1],juggle:['per mid-air hit',1],crates:['per crate',1],quake:['per quake survived',1],tornado:['per twister survived',1],flood:['per flood kept dry',1],swap:['per swap survived',1],pits:['per pit dodged',1]};
+  stampede:['per stampede survived',1],gust:['per gust weathered',1],mines:['per mine that fizzles',1],mirror:['per flip survived',1],lava:['per zap jumped',1],paint:['per tile painted',1],wetpaint:['per painted tile, every 2 s',1],slipstream:['per 0.1 s of dashing',1],quakerider:['per bounce during a quake',1],floatisland:['per island ridden',1],walls:['per wall set survived',1],simon:['per step of a sequence',1],katamari:['per thing picked up (× your size)',1],juggle:['per mid-air hit',1],crates:['per crate',1],quake:['per quake survived',1],tornado:['per twister survived',1],flood:['per flood kept dry',1],swap:['per swap survived',1],pits:['per pit dodged',1]};
 for(const id in PAY)byId[id].earn=PAY[id]*UNIT[id][1]+' '+UNIT[id][0];
 // Triggers rewire a prompt: it stops firing on its timer and fires on an event instead.
 const TRIGS=[
@@ -544,6 +550,10 @@ const LB={url:'https://wfzywfykvxyhjcigeimr.supabase.co',key:'sb_publishable_Ovq
 /* RELEASES: newest first. EVERY merge adds a new entry on top: a bumped version (1.1.1, 1.1.2, ...) plus its "What's new" notes.
    The top entry is the current version. Scores are stamped with it and the title screen shows its notes. */
 const RELEASES=[
+  {v:'1.4',notes:[
+    'New prompts: Floating Island, Walls Rise and Simon Says. New rules: Satellite (a second small disk), Bonus Disk (double income inside it) and Katamari (stuff sticks to you as you grow).',
+    'Balance: a new 1.4 board. Katamari pays more the bigger you get, and a hit shakes some of it off.',
+    'A space skybox with stars and nebulas replaces the flat sky.']},
   {v:'1.3',notes:[
     'Balance: a new 1.3 board. Enhanced cards (5% of rule and prompt offers, 12% with a no-timer draft rule) pay ×1.25 or give a reroll.',
     'New draft rules: Sprint Goal, Scars and Chain Gang. Overdrive (only offered with a no-timer draft rule) makes 1 of every 3 offers Overloaded: it comes with a free modifier.',
@@ -649,6 +659,22 @@ renderer.shadowMap.enabled=true; renderer.shadowMap.type=T.PCFSoftShadowMap;
 const scene=new T.Scene();
 const SKY=new T.Color(0x4a35d6), NIGHT=new T.Color(0x0a0720);
 scene.background=SKY.clone(); scene.fog=new T.Fog(0x4a35d6,34,95);
+// Space skybox: stars and nebulas painted once per run seed onto an equirectangular canvas, wrapped on a sphere that follows the camera.
+const skyCan=document.createElement('canvas'),skyTex=new T.CanvasTexture(skyCan),
+  skyMat=new T.MeshBasicMaterial({map:skyTex,side:T.BackSide,fog:false,depthWrite:false}),skyMesh=new T.Mesh(new T.SphereGeometry(150,32,16),skyMat);
+skyMesh.renderOrder=-1;scene.add(skyMesh);
+function buildSky(seed){
+  let a=(seed>>>0)||1;const r=()=>{a=a+0x6D2B79F5|0;let t=Math.imul(a^a>>>15,1|a);t=t+Math.imul(t^t>>>7,61|t)^t;return((t^t>>>14)>>>0)/4294967296};
+  const W=matchMedia('(pointer:coarse)').matches?1024:2048,H=W/2;skyCan.width=W;skyCan.height=H;const x=skyCan.getContext('2d');
+  const g=x.createLinearGradient(0,0,0,H);g.addColorStop(0,'#0a0720');g.addColorStop(.5,'#241a78');g.addColorStop(1,'#0a0720');x.fillStyle=g;x.fillRect(0,0,W,H);
+  x.globalCompositeOperation='lighter';
+  const hues=[r()*360];hues.push((hues[0]+120+r()*80)%360);
+  for(let i=0;i<11;i++){const cx=r()*W,cy=H*(.3+r()*.55),rad=W*(.1+r()*.14),h=hues[i%2]+r()*30;
+    for(const dx of [0,-W,W]){const gr=x.createRadialGradient(cx+dx,cy,0,cx+dx,cy,rad);gr.addColorStop(0,'hsla('+h+',90%,62%,.62)');gr.addColorStop(.5,'hsla('+h+',85%,48%,.28)');gr.addColorStop(1,'hsla('+h+',80%,40%,0)');x.fillStyle=gr;x.fillRect(cx+dx-rad,cy-rad,rad*2,rad*2)}}
+  x.globalCompositeOperation='source-over';
+  for(let i=0;i<W*.5;i++){const sz=r()<.07?2.2:1,al=.35+r()*.65;x.fillStyle='rgba(255,255,255,'+al.toFixed(2)+')';x.fillRect(r()*W,r()*H,sz,sz)}
+  skyTex.needsUpdate=true}
+buildSky((Math.random()*2147483647)|0);
 const camera=new T.PerspectiveCamera(48,1,.1,220);
 const hemi=new T.HemisphereLight(0xffffff,0x6a55ff,.78); scene.add(hemi);
 const sun=new T.DirectionalLight(0xfff1d0,.85); sun.position.set(9,20,7); sun.castShadow=true;
@@ -691,12 +717,14 @@ const SHAPES={
   runway:{depth:.34,ext:1.45,pieces:[{k:'rect',x:0,z:0,hw:1.45,hl:.34}]},
   twin:{depth:.5,ext:1.12,pieces:[{k:'disc',x:-.62,z:0,r:.5},{k:'disc',x:.62,z:0,r:.5},{k:'rect',x:0,z:0,hw:.2,hl:.09}]},
   bowl:{depth:1,ext:1,pieces:[{k:'disc',x:0,z:0,r:1}],fy:r=>-2.6*(1-r*r)},
+  satellite:{depth:.3,ext:1.25,pieces:[{k:'disc',x:-.3,z:0,r:.78},{k:'disc',x:.82,z:0,r:.28}]},
   dome:{depth:1,ext:1,pieces:[{k:'disc',x:0,z:0,r:1}],fy:r=>2.2*(1-r*r)},
 };
 function pieceSd(q,u,v){const du=u-q.x,dv=v-q.z;
   if(q.k==='disc')return q.r-Math.hypot(du,dv);
   if(q.k==='rect')return Math.min(q.hw-Math.abs(du),q.hl-Math.abs(dv));
   const d=Math.hypot(du,dv);return Math.min(q.r2-d,d-q.r1)}
+const isle=[]; // Floating Island: raised drifting pads that ARENA.fy honours
 const ARENA={id:'disc',sh:SHAPES.disc,samples:[],
   sdU(u,v){let s=-1e9;for(const q of this.sh.pieces)s=Math.max(s,pieceSd(q,u,v));return s},
   rot:0,
@@ -705,7 +733,7 @@ const ARENA={id:'disc',sh:SHAPES.disc,samples:[],
   get depth(){return this.sh.depth*R},
   get ext(){return this.sh.ext},
   // floor height (0 except on Bowl and Dome)
-  fy(x,z){let y=0;const f=this.sh.fy;if(f)y=f(Math.min(1,Math.hypot(x,z)/R));if(ev.floodT>0)for(const q of floodPads)if(Math.hypot(x-q.x,z-q.z)<q.r)y=Math.max(y,1.2);return y},
+  fy(x,z){let y=0;const f=this.sh.fy;if(f)y=f(Math.min(1,Math.hypot(x,z)/R));if(ev.floodT>0)for(const q of floodPads)if(Math.hypot(x-q.x,z-q.z)<q.r)y=Math.max(y,1.2);for(const q of isle)if(Math.hypot(x-q.x,z-q.z)<q.r)y=Math.max(y,q.h);return y},
   // direction toward the middle of the floor (up the signed-distance gradient)
   inward(x,z){const e=.25,gx=this.sd(x+e,z)-this.sd(x-e,z),gz=this.sd(x,z+e)-this.sd(x,z-e),l=Math.hypot(gx,gz);
     if(l<1e-6){const d=Math.hypot(x,z)||1;return[-x/d,-z/d]}return[gx/l,gz/l]},
@@ -856,6 +884,7 @@ ARENA.set('disc');
 
 function clearList(a){a.forEach(o=>world.remove(o.mesh||o));a.length=0}
 function clearEntities(){
+  isle.length=0;buildIsle();clearWalls();clearSimon();zone.on=false;kataReset();
   bodies.forEach(b=>{if(b!==player)world.remove(b.mesh)}); bodies=[player];
   [orbs,shots,bullets,mines,bombs].forEach(clearList);clearStatics();
   meteors.forEach(m=>{world.remove(m.ring);world.remove(m.rock)}); meteors.length=0;
@@ -905,7 +934,7 @@ function clearStatics(){
 // Rebuild the scenery that depends on which cards you own. Bodies, pickups and timers keep running,
 // so a card taken mid-run changes the game in place.
 function applyStatics(){
-  clearStatics();
+  clearStatics();if(!L('katamari'))kataReset();
   {const sc=S.picks.map(id=>byId[id]).find(c=>c.slot==='shape'),id=sc?sc.shape:'disc';if(S.t>0&&ARENA.id!==id&&!(ev.swapT>0))morphTo(id,0);else if(!ev.morph&&!(ev.swapT>0))ARENA.set(id)}
   const nt=L('turrets')?Math.round(2*mv('turrets','count')):0, off=rand(0,6.28);
   for(let i=0;i<nt;i++){const g=new T.Group(),base=new T.Mesh(GEO.cyl,MAT.turret);base.scale.set(.5,1.6,.5);g.add(base);
@@ -1026,6 +1055,30 @@ const lapMk=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0xfff8e8}));lapMk
 function lapUpdate(){if(!lapMk.visible){const[x,z]=spot(.8,6);lapMk.position.set(x,.06+ARENA.fy(x,z),z);lapMk.visible=true}
   lapMk.rotation.y+=.05;if(Math.hypot(player.p.x-lapMk.position.x,player.p.z-lapMk.position.z)<1.6&&player.p.y<3){S.lapN++;lapMk.visible=false;snd(660+S.lapN*110,.1,'triangle',.06);ringFx(lapMk.position.x,lapMk.position.z,1.6,0xfff8e8)}}
 
+/* ---------- 1.4 prompts and rules: island, walls, Simon, bonus disk, katamari ---------- */
+const islG=new T.Group();world.add(islG);
+function buildIsle(){while(islG.children.length)islG.remove(islG.children[0]);for(const q of isle){const m=new T.Mesh(GEO.cyl,MAT.bumper);m.scale.set(q.r,q.h,q.r);m.position.set(q.x,q.h/2,q.z);m.castShadow=true;q.mesh=m;islG.add(m)}}
+const walls=[],wallG=new T.Group();world.add(wallG);
+function clearWalls(){walls.length=0;while(wallG.children.length)wallG.remove(wallG.children[0])}
+const simonG=new T.Group();world.add(simonG);const SIMON_COL=[0xff3d77,0x3df0c2,0xffd23f,0x8a4dff],SIMON_NOTE=[262,330,392,523];
+function clearSimon(){ev.simon=null;while(simonG.children.length)simonG.remove(simonG.children[0])}
+const zone={p:new V3(),on:false,r:1.8},zoneMk=new T.Mesh(GEO.disc,new T.MeshBasicMaterial({color:0xffd23f,transparent:true,opacity:.3}));zoneMk.scale.setScalar(zone.r);zoneMk.position.y=.035;zoneMk.visible=false;world.add(zoneMk);
+const zoneRing=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0xffd23f}));zoneRing.position.y=.01;zoneMk.add(zoneRing);
+const inZone=()=>L('bonusdisk')&&zone.on&&Math.hypot(player.p.x-zone.p.x,player.p.z-zone.p.z)<zone.r&&player.p.y<3;
+// Katamari: bodies that touch you stick to the ball; size drives radius, score and camera.
+const kata={n:0,stuck:[]};
+const kataSize=()=>L('katamari')?Math.min(2.2,1+.06*kata.n):1;
+function kataReset(){for(const m of kata.stuck)player.ball.remove(m);kata.stuck.length=0;kata.n=0}
+function kataShed(){if(!kata.stuck.length)return;const k=Math.ceil(kata.stuck.length*.3);
+  for(let i=0;i<k;i++){const m=kata.stuck.pop();if(m){tmp.setFromMatrixPosition(m.matrixWorld);player.ball.remove(m);burst(tmp,0xffffff,4)}}
+  kata.n=Math.floor(kata.n*.7);banner('Shed!')}
+function kataUpdate(){
+  const sz=kataSize();player.r=.6*sz;player.m=sz;player.mesh.scale.setScalar(player.r);
+  for(const b of bodies){if(b===player||b.dead||!(b.kind==='crate'||b.kind==='runner'||b.kind==='dummy'||b.kind==='ball'))continue;
+    if(Math.hypot(b.p.x-player.p.x,b.p.y-player.p.y,b.p.z-player.p.z)>player.r+b.r+.15)continue;
+    b.dead=true;world.remove(b.mesh);const m=b.mesh;kata.stuck.push(m);player.ball.add(m);
+    tmp.set(rand(-1,1),rand(-1,1),rand(-1,1)).normalize();m.position.copy(tmp).multiplyScalar(1.05);m.scale.setScalar(.4);m.rotation.set(rand(0,6),rand(0,6),rand(0,6));
+    kata.n++;add(PAY.katamari*sz,'katamari',player.p.clone());snd(520+Math.min(kata.n,20)*20,.06,'triangle',.05,200)}}
 /* ---------- fx ---------- */
 let shake=0;
 function ringFx(x,z,rad,color=0xffffff){const m=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color,transparent:true,side:T.DoubleSide}));
@@ -1101,6 +1154,7 @@ function add(n,id,p,k=1){let v=n*payMul(id)*k;
   S.chainN=S.t-S.chainLast<2?(S.chainN||0)+1:1;S.chainLast=S.t;const bounty=byId[id].type==='prompt';
   if(REROLL_EVERY[id]&&p&&(S.rrN[id]=(S.rrN[id]||0)+1)>=REROLL_EVERY[id]){S.rrN[id]=0;S.reroll++;floater('+1 reroll',p.clone?p.clone():player.p.clone(),false,true)}
   if(!bounty&&L('greed')&&ARENA.band(player.p.x,player.p.z))v*=2;
+  if(!bounty&&inZone())v*=2;
   if(!bounty&&L('momentum'))v*=1+Math.min(L('openroad')?2:1,Math.hypot(player.v.x,player.v.z)/12);
   if(bounty&&L('hunter')&&++S.hunt>=12&&S.t-(S.healT||-99)>=8){S.hunt=0;S.healT=S.t;if(S.hearts<maxH())spawnHeart(14)}
   if(L('combo')){S.streak=S.t-S.lastScore<2?Math.min(L('gambler')?20:10,S.streak+1):0;S.lastScore=S.t;v*=1+.1*S.streak}
@@ -1116,7 +1170,7 @@ function smash(b){if(b.dead)return;b.dead=true;world.remove(b.mesh);burst(b.p,0x
 /* ---------- damage ---------- */
 // One place for everything that happens when you lose a heart.
 function loseHeart(){
-  S.hitsSince=(S.hitsSince||0)+1;
+  S.hitsSince=(S.hitsSince||0)+1;S.hitN=(S.hitN||0)+1;if(L('katamari'))kataShed();
   S.cleanT=0;
   if(L('countdown')){S.clock-=8;floater('-8 s',player.p.clone(),true)}else S.hearts--;
   if(L('bank')&&S.unbanked>0){floater('Dropped '+fmt(S.unbanked),player.p.clone(),true);S.unbanked=0}
@@ -1185,12 +1239,20 @@ function emit(evt){if(evt==='ko')S.koSince++;for(const id in S.trig){if(S.trig[i
   if(trigCount[id]>=trigN(id)&&S.t-(trigLast[id]===undefined?-9:trigLast[id])>1.2){trigCount[id]=0;trigLast[id]=S.t;fireQ.push(id)}}}
 const PERIOD={chasers:()=>6.5,meteors:()=>2.4/mv('meteors','count'),flip:()=>7/mv('flip','speed'),gold:()=>8/mv('gold','speed'),stampede:()=>8/mv('stampede','speed'),
   gust:()=>8/mv('gust','speed'),mirror:()=>10/mv('mirror','speed'),lava:()=>8/mv('lava','speed'),mines:()=>7/mv('mines','speed'),turrets:()=>3.2/mv('turrets','speed'),
-  quake:()=>14/mv('quake','speed'),tornado:()=>13/mv('tornado','speed'),flood:()=>15/mv('flood','speed'),swap:()=>35/mv('swap','speed'),pits:()=>5/mv('pits','speed')};
-const FIRST={quake:6,tornado:5,flood:6,swap:15,pits:3,chasers:1.5,meteors:1.5,flip:5,gold:2.5,stampede:4,gust:5,mirror:6,lava:5,mines:3,turrets:1.5};
+  quake:()=>14/mv('quake','speed'),tornado:()=>13/mv('tornado','speed'),flood:()=>15/mv('flood','speed'),swap:()=>35/mv('swap','speed'),floatisland:()=>22/mv('floatisland','speed'),walls:()=>24/mv('walls','speed'),simon:()=>26/mv('simon','speed'),pits:()=>5/mv('pits','speed')};
+const FIRST={quake:6,tornado:5,flood:6,swap:15,floatisland:8,walls:10,simon:12,pits:3,chasers:1.5,meteors:1.5,flip:5,gold:2.5,stampede:4,gust:5,mirror:6,lava:5,mines:3,turrets:1.5};
 const FIRE={
  quake(){if(ev.quakeT>0)return;ev.quakeT=4*mv('quake','long');ev.quakeStart=S.t;ev.quakeA=rand(0,6.283);banner('Earthquake!');shake=1;nz(1.2,.3,'lowpass',180,60);holesDirty=true},
  tornado(){const[x,z]=spot(.6,6);tw.p.set(x,0,z);tw.t=6*mv('tornado','long');tw.start=S.t;const a=rand(0,6.283);tw.v.set(Math.cos(a)*2.5,0,Math.sin(a)*2.5);tw.mesh.visible=true;banner('Tornado!');nz(2,.12,'bandpass',500,1200)},
  flood(){if(ev.floodT>0)return;ev.floodT=6;ev.floodStart=S.t;floodPads=[];for(let i=0;i<4;i++){const[x,z]=spot(.7,0);floodPads.push({x,z,r:1.6})}buildPads();banner('Flood!');if(L('tidalwave'))FIRE.gust();nz(1.5,.15,'lowpass',400,200)},
+ floatisland(){if(isle.length)return;const[x,z]=spot(.6,3),a=rand(0,6.283);isle.push({x,z,r:2.2*mv('floatisland','size'),h:1.2,t:8,vx:Math.cos(a)*.9,vz:Math.sin(a)*.9,on:0,paid:false});buildIsle();banner('Island!');snd(400,.3,'sine',.07,300)},
+ walls(){if(walls.length)return;const n=Math.round(3*mv('walls','count'));ev.wallStart=S.t;ev.wallHit=S.hitN||0;
+  for(let i=0;i<n;i++){const[x,z]=spot(.7,3),yaw=rand(0,3.14),c=Math.cos(yaw),sn=Math.sin(yaw);let len=rand(4,7);while(len>2&&!(ARENA.on(x+c*len/2,z+sn*len/2,1)&&ARENA.on(x-c*len/2,z-sn*len/2,1)))len-=.5;
+   const m=new T.Mesh(GEO.box,MAT.iron);m.castShadow=true;m.rotation.y=-yaw;m.scale.set(len,.05,.6);m.position.set(x,.03,z);wallG.add(m);walls.push({x,z,yaw,len,t:-1.2,life:8,mesh:m})}
+  banner('Walls incoming!');snd(120,.5,'sawtooth',.07,-40)},
+ simon(){if(ev.simon)return;const N=Math.min(8,3+Math.floor(S.t/90)+stacks('simon','count')),d=.55*R*ARENA.ext,seq=[];for(let i=0;i<N;i++)seq.push(Math.floor(Math.random()*4));
+  const pads=[];for(let k=0;k<4;k++){const a=k*Math.PI/2,[x,z]=ARENA.nearest(Math.cos(a)*d,Math.sin(a)*d,1.6),m=new T.Mesh(GEO.disc,new T.MeshBasicMaterial({color:SIMON_COL[k],transparent:true,opacity:.3}));m.scale.setScalar(1.2);m.position.set(x,.04+ARENA.fy(x,z),z);simonG.add(m);pads.push({x,z,m})}
+  ev.simon={phase:'show',seq,idx:0,t:-.8,pads,cur:-1,start:S.t,ok:false,speed:mv('simon','speed')};banner('Simon says…');snd(300,.2,'sine',.06,200)},
  swap(){if(ev.swapT>0)return;const others=Object.keys(SHAPES).filter(k=>k!==ARENA.id&&!SHAPES[k].fy);ev.swapBack=ARENA.id;ev.swapT=5*mv('swap','long')+1.5+1.2;ev.swapStart=S.t;morphTo(others[Math.floor(Math.random()*others.length)],1.5);banner('Arena swap incoming…');snd(300,.4,'sine',.08,600)},
  pits(){const n=Math.round(2*mv('pits','count')),r=1.3*mv('pits','size');for(let i=0;i<n;i++){let x=player.p.x+(i?rand(-4,4):0),z=player.p.z+(i?rand(-4,4):0);
    pitList.push({x,z,r,warn:1.1,open:3.2,hit:false});}holesDirty=true;snd(500,.3,'square',.04,-300)},
@@ -1528,6 +1590,34 @@ function update(dt){
 
   updatePickup(dt);
   S.cleanT+=dt;
+  // --- 1.4: island, walls, Simon, bonus disk, katamari
+  for(let i=isle.length-1;i>=0;i--){const q=isle[i];q.t-=dt;q.x+=q.vx*dt;q.z+=q.vz*dt;if(!ARENA.on(q.x,q.z,1.5)){q.vx=-q.vx;q.vz=-q.vz}
+    q.mesh.position.set(q.x,q.h/2,q.z);
+    if(Math.hypot(player.p.x-q.x,player.p.z-q.z)<q.r&&player.p.y>q.h+player.r-.35&&player.p.y<q.h+player.r+1.5)q.on+=dt;
+    if(!q.paid&&q.on>=3){q.paid=true;add(PAY.floatisland,'floatisland',player.p.clone());snd(880,.1,'triangle',.06,300)}
+    if(q.t<=0){isle.splice(i,1);buildIsle()}}
+  for(let i=walls.length-1;i>=0;i--){const w=walls[i];w.t+=dt;
+    const h=Math.min(clamp(w.t/.8,0,1),clamp((w.life-w.t)/.6,0,1));
+    w.mesh.scale.y=Math.max(.05,h*2.2);w.mesh.position.y=Math.max(.03,h*1.1);
+    if(w.t>.3&&h>.5){const c=Math.cos(w.yaw),sn=Math.sin(w.yaw),L2=w.len/2;
+      for(const b of bodies){if(b.dead||b.p.y>2.4)continue;const dx=b.p.x-w.x,dz=b.p.z-w.z,u=dx*c+dz*sn,v=-dx*sn+dz*c;let nu=u-clamp(u,-L2,L2),nv=v-clamp(v,-.3,.3);const dd=Math.hypot(nu,nv);
+        if(dd>=b.r)continue;let pen;if(dd<1e-4){nu=0;nv=v>=0?1:-1;pen=.3-Math.abs(v)+b.r}else{nu/=dd;nv/=dd;pen=b.r-dd}
+        const nx=nu*c-nv*sn,nz=nu*sn+nv*c;b.p.x+=nx*pen;b.p.z+=nz*pen;const vn=b.v.x*nx+b.v.z*nz;if(vn<0){b.v.x-=1.4*vn*nx;b.v.z-=1.4*vn*nz}}}
+    if(w.t>=w.life){wallG.remove(w.mesh);walls.splice(i,1);if(!walls.length&&(S.hitN||0)===ev.wallHit)add(PAY.walls,'walls',player.p.clone())}}
+  if(ev.simon){const sm=ev.simon;sm.t+=dt*(sm.phase==='show'?sm.speed:1);const lit=(k,on)=>{sm.pads[k].m.material.opacity=on?.95:.3};
+    if(sm.phase==='show'){const i=Math.floor(sm.t/.9),ph=sm.t-i*.9;for(let k=0;k<4;k++)lit(k,sm.t>=0&&i<sm.seq.length&&sm.seq[i]===k&&ph<.6);
+      if(sm.t>=0&&i!==sm.shown&&i<sm.seq.length){sm.shown=i;snd(SIMON_NOTE[sm.seq[i]],.3,'triangle',.08)}
+      if(i>=sm.seq.length){sm.phase='input';sm.t=0;banner('Your turn');for(let k=0;k<4;k++)lit(k,false)}}
+    else if(sm.phase==='input'){let on=-1;for(let k=0;k<4;k++)if(Math.hypot(player.p.x-sm.pads[k].x,player.p.z-sm.pads[k].z)<1.3&&player.p.y<3)on=k;
+      for(let k=0;k<4;k++)lit(k,k===on);
+      if(on!==sm.cur){sm.cur=on;if(on>=0){if(on===sm.seq[sm.idx]){snd(SIMON_NOTE[on],.25,'triangle',.08);sm.idx++;
+        if(sm.idx>=sm.seq.length){sm.phase='done';sm.t=0;sm.ok=true;add(PAY.simon*sm.seq.length,'simon',player.p.clone());banner('Simon approves!')}}
+        else{sm.phase='done';sm.t=0;snd(90,.4,'sawtooth',.1,-30);banner('Wrong pad')}}}
+      if(sm.phase==='input'&&sm.t>8+sm.seq.length){sm.phase='done';sm.t=0;banner('Too slow')}}
+    else if(sm.t>.9)clearSimon()}
+  if(L('bonusdisk')){if(!zone.on||!ARENA.on(zone.p.x,zone.p.z,1)){const[x,z]=spot(.7,0);zone.p.set(x,0,z);zone.on=true}
+    zoneMk.visible=true;zoneMk.position.set(zone.p.x,.035+ARENA.fy(zone.p.x,zone.p.z),zone.p.z)}else{zoneMk.visible=false;zone.on=false}
+  if(L('katamari'))kataUpdate();
   if(L('slipstream')&&player.dashT>0){timers.slip=(timers.slip||0)+dt;if(timers.slip>=.1){timers.slip=0;add(PAY.slipstream,'slipstream',null)}}
   if(L('countdown')){if(!(L('overclock')&&S.streak>0&&S.t-S.lastScore<2))S.clock-=dt;if(S.clock<=0){gameOver();return}}
   if(L('decay')){S.score=Math.max(0,S.score-S.score*.012*dt);S.peak=Math.max(S.peak,S.score)}
@@ -1561,9 +1651,10 @@ function visuals(dt,rdt){
    scene.fog.near+=(fn-scene.fog.near)*k;scene.fog.far+=(ff-scene.fog.far)*k}
   if(tw.mesh.visible){tw.mesh.position.set(tw.p.x,3.2+ARENA.fy(tw.p.x,tw.p.z),tw.p.z);tw.mesh.scale.set(3.2*mv('tornado','size'),6.5,3.2*mv('tornado','size'));tw.mesh.rotation.y+=rdt*9;tw.mesh.rotation.x=Math.PI}
   scene.background.lerp(night?NIGHT:SKY,k);scene.fog.color.copy(scene.background);
+  {const v=skyMat.color.r+((night?.35:1)-skyMat.color.r)*k;skyMat.color.setScalar(v);if(!reduceMotion)skyMesh.rotation.y+=rdt*.004;skyMesh.position.copy(camera.position)}
   hemi.intensity+=((night?.1:.78)-hemi.intensity)*k;sun.intensity+=((night?.06:.85)-sun.intensity)*k;lamp.intensity+=((night?1.9:0)-lamp.intensity)*k;
   tmp.copy(player.p).applyMatrix4(world.matrixWorld);lamp.position.set(tmp.x,tmp.y+3,tmp.z);
-  const asp=camera.aspect,zoom=(asp<1.25?Math.min(2,Math.pow(1.25/asp,.75)):1)*Math.max(1,(R/R0)*.6+ARENA.ext*.4);
+  const asp=camera.aspect,zoom=(asp<1.25?Math.min(2,Math.pow(1.25/asp,.75)):1)*Math.max(1,(R/R0)*.6+ARENA.ext*.4)*(1+.3*(kataSize()-1));
   const px=clamp(player.p.x,-R0,R0),pz=clamp(player.p.z,-R0,R0);
   let tx=px*.45,tz=pz*.45,ty=0,ox=0,oy=16,oz=17,fov=48;
   if(S.phase==='title'){camSpin+=rdt*.25;ox=Math.sin(camSpin)*17;oz=Math.cos(camSpin)*17}
@@ -1755,7 +1846,7 @@ function choose(i){
 /* ---------- flow ---------- */
 // After a choice: apply the new card and carry on from exactly where play stopped.
 function resumePlay(){
-  applyStatics();timers.pick=PICK_EVERY*draftNeed();S.pickBase=S.earned;S.koSince=0;S.lapN=0;lapMk.visible=false;S.cleanT=0;S.hitsSince=0;S.chainN=0;S.chainLast=-9;S.goalT=30;jumpQ=false;
+  applyStatics();timers.pick=PICK_EVERY*draftNeed();S.pickBase=S.earned;S.koSince=0;S.lapN=0;lapMk.visible=false;S.cleanT=0;zone.on=false;S.hitsSince=0;S.chainN=0;S.chainLast=-9;S.goalT=30;jumpQ=false;
   if(L('foresight'))S.nextOffers=pickOffers();else S.nextOffers=null;for(const k in actQ)actQ[k]=false;
   if(S.t===0){const[sx,sz]=ARENA.nearest(0,0,2);player.p.set(sx,player.r+ARENA.fy(sx,sz),sz);player.v.set(0,0,0);banner('Go!')}
   player.inv=Math.max(player.inv,1);S.phase='play';hudCache='';last=performance.now();if(coarse)$('touch').hidden=false;
@@ -1805,7 +1896,7 @@ function startRun(mode,data){
   if(typeof mode!=='string')mode='normal';audioInit();
   Object.assign(S,{run:mode,day:today(),seed:mode==='daily'?today():mode==='code'?data.seed:(Math.random()*2147483647)|0,code:'',
     picks:[],lv:{},mods:{},trig:{},by:{},score:0,income:0,bounty:0,hearts:MAXH,t:0,earned:0,pickBase:0,koSince:0,lapN:0,cleanT:0,unbanked:0,clock:60,peak:0,rentT:60,rentBase:0,infl:1,inflF:1,forceCut:false,lastMod:null,nextOffers:null,pickLeft:1,reroll:1,rrN:{},enh:{},ovl:{},pickCount:0,lastFall:-1,streak:0,lastScore:-9,cutAt:0,mode:'draft',boss:false,bossDown:false,bossN:0,nextBoss:BOSS_EVERY,bossEnd:0,bossPts:0,bossKills:0,hunt:0,healT:-99});
-  lastShown=[];passed={};lbPosted=false;seedRng(S.seed);musicSetup();
+  lastShown=[];passed={};lbPosted=false;seedRng(S.seed);buildSky(S.seed);musicSetup();
   resetRunState();player.p.set(0,player.r,0);player.v.set(0,0,0);
   $('title').hidden=true;$('over').hidden=true;$('pick').hidden=true;$('hud').hidden=false;hudCache='';
   if(mode==='code'){for(const c of data.cards){S.lv[c.id]=1;S.picks.push(c.id);if(Object.keys(c.mods).length)S.mods[c.id]=c.mods;if(c.trig)S.trig[c.id]=c.trig;if(c.enh)S.enh[c.id]=true;if(c.ovl)S.ovl[c.id]=true}
