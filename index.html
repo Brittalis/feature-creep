@@ -463,16 +463,17 @@ const CARDS=[
  {id:'walls',type:'prompt',name:'Walls Rise',desc:'Walls rise out of the plate for 8 s. Get through without losing a heart.',pitch:'rising walls',word:'Walled',mods:{count:'Twice as many walls.',speed:'Walls come 1.5× as often.'}},
  {id:'simon',type:'prompt',name:'Simon Says',desc:'Four pads flash in order. Step on them in the same order.',pitch:'copycat pads',word:'Simon',mods:{count:'One more step in every sequence.',speed:'Sequences come 1.5× as often.'}},
  {id:'katamari',type:'rule',goal:1,excludes:['big','tiny'],name:'Katamari',desc:'Small things stick to you as you roll. You grow and score more, but a hit shakes some off.',word:'Rolling',pitch:'roll up everything',mods:{}},
+ {id:'mezzanine',type:'rule',slot:'levels',goal:1,excludes:['bowl','dome','conveyor','crumble','paint','flood','quake','pits','swap'],name:'Mezzanine',desc:'A second plate floats above the first. Launch pads throw you up and slides bring you down. Falling off the top lands you on the bottom.',word:'Upstairs',pitch:'climb to the top deck',mods:{size:'The upper plate is 1.35× wider.'}},
 ];
 const byId=Object.fromEntries(CARDS.map(c=>[c.id,c]));
 // Earnable rerolls: these cards grant a reroll every Nth time they pay out.
 const REROLL_EVERY={gold:10,flip:3,mirror:2,lava:4,quake:2,tag:6};
 for(const id in REROLL_EVERY){const c=byId[id];if(c)c.desc+=' Every '+REROLL_EVERY[id]+(c.type==='prompt'?' bounties':' catches')+' earns a reroll.'}
 // Base payouts, tuned from bot-played sprints so one sprint of any scoring card is worth roughly the same.
-const PAY={orbs:10,sumo:30,hill:6,air:3,tag:28,courier:23,meteors:10,chasers:20,laser:25,flip:25,shrink:40,turrets:8,gold:5,stampede:35,gust:35,mines:8,mirror:40,lava:35,paint:2,wetpaint:.5,slipstream:2,quakerider:6,floatisland:30,walls:30,simon:12,katamari:8,juggle:12,crates:12,quake:30,tornado:25,flood:30,swap:25,pits:10};
+const PAY={orbs:10,sumo:30,hill:6,air:3,tag:28,courier:23,meteors:10,chasers:20,laser:25,flip:25,shrink:40,turrets:8,gold:5,stampede:35,gust:35,mines:8,mirror:40,lava:35,paint:2,wetpaint:.5,slipstream:2,quakerider:6,floatisland:30,walls:30,simon:12,katamari:8,mezzanine:2,juggle:12,crates:12,quake:30,tornado:25,flood:30,swap:25,pits:10};
 const UNIT={orbs:['per orb',1],sumo:['per pin',1],hill:['per second inside',2],air:['per second airborne',4],tag:['per catch',1],courier:['per checkpoint',1],meteors:['per meteor dodged',1],
   chasers:['per bully knocked off',1],laser:['per bar jumped',1],flip:['per hiccup landed',1],shrink:['per squeeze survived',1],turrets:['per shot dodged',1],gold:['per coin',1],
-  stampede:['per stampede survived',1],gust:['per gust weathered',1],mines:['per mine that fizzles',1],mirror:['per flip survived',1],lava:['per zap jumped',1],paint:['per tile painted',1],wetpaint:['per painted tile, every 2 s',1],slipstream:['per 0.1 s of dashing',1],quakerider:['per bounce during a quake',1],floatisland:['per island ridden',1],walls:['per wall set survived',1],simon:['per step of a sequence',1],katamari:['per thing picked up (× your size)',1],juggle:['per mid-air hit',1],crates:['per crate',1],quake:['per quake survived',1],tornado:['per twister survived',1],flood:['per flood kept dry',1],swap:['per swap survived',1],pits:['per pit dodged',1]};
+  stampede:['per stampede survived',1],gust:['per gust weathered',1],mines:['per mine that fizzles',1],mirror:['per flip survived',1],lava:['per zap jumped',1],paint:['per tile painted',1],wetpaint:['per painted tile, every 2 s',1],slipstream:['per 0.1 s of dashing',1],quakerider:['per bounce during a quake',1],floatisland:['per island ridden',1],walls:['per wall set survived',1],simon:['per step of a sequence',1],katamari:['per thing picked up (× your size)',1],mezzanine:['per 0.5 s on the upper plate',1],juggle:['per mid-air hit',1],crates:['per crate',1],quake:['per quake survived',1],tornado:['per twister survived',1],flood:['per flood kept dry',1],swap:['per swap survived',1],pits:['per pit dodged',1]};
 for(const id in PAY)byId[id].earn=PAY[id]*UNIT[id][1]+' '+UNIT[id][0];
 // Triggers rewire a prompt: it stops firing on its timer and fires on an event instead.
 const TRIGS=[
@@ -550,6 +551,9 @@ const LB={url:'https://wfzywfykvxyhjcigeimr.supabase.co',key:'sb_publishable_Ovq
 /* RELEASES: newest first. EVERY merge adds a new entry on top: a bumped version (1.1.1, 1.1.2, ...) plus its "What's new" notes.
    The top entry is the current version. Scores are stamped with it and the title screen shows its notes. */
 const RELEASES=[
+  {v:'1.5',notes:[
+    'New rule: Mezzanine, a second plate above the first. Launch pads throw you up, slides bring you down, and falling off the top lands you on the bottom (no heart lost).',
+    'Balance: a new 1.5 board. Mezzanine pays for time spent on the upper plate and for launches.']},
   {v:'1.4',notes:[
     'New prompts: Floating Island, Walls Rise and Simon Says. New rules: Satellite (a second small disk), Bonus Disk (double income inside it) and Katamari (stuff sticks to you as you grow).',
     'Balance: a new 1.4 board. Katamari pays more the bigger you get, and a hit shakes some of it off.',
@@ -725,6 +729,7 @@ function pieceSd(q,u,v){const du=u-q.x,dv=v-q.z;
   if(q.k==='rect')return Math.min(q.hw-Math.abs(du),q.hl-Math.abs(dv));
   const d=Math.hypot(du,dv);return Math.min(q.r2-d,d-q.r1)}
 const isle=[]; // Floating Island: raised drifting pads that ARENA.fy honours
+const ramps=[],lvPads=[],MEZ_H=6; // Mezzanine: slides, launch pads, and the height of the upper plate
 const ARENA={id:'disc',sh:SHAPES.disc,samples:[],
   sdU(u,v){let s=-1e9;for(const q of this.sh.pieces)s=Math.max(s,pieceSd(q,u,v));return s},
   rot:0,
@@ -733,7 +738,13 @@ const ARENA={id:'disc',sh:SHAPES.disc,samples:[],
   get depth(){return this.sh.depth*R},
   get ext(){return this.sh.ext},
   // floor height (0 except on Bowl and Dome)
-  fy(x,z){let y=0;const f=this.sh.fy;if(f)y=f(Math.min(1,Math.hypot(x,z)/R));if(ev.floodT>0)for(const q of floodPads)if(Math.hypot(x-q.x,z-q.z)<q.r)y=Math.max(y,1.2);for(const q of isle)if(Math.hypot(x-q.x,z-q.z)<q.r)y=Math.max(y,q.h);return y},
+  // Mezzanine: one upper plate (a disc at the centre) plus slides. Bodies only stand on it if they are above it.
+  UR(){return R*.42*(stacks('mezzanine','size')?1.35:1)},
+  onUpper(x,z,m=0){return !!S.lv.mezzanine&&Math.hypot(x,z)<this.UR()-m},
+  rampAt(x,z){if(!S.lv.mezzanine)return null;for(const rp of ramps){const c=Math.cos(rp.a),s=Math.sin(rp.a),al=x*c+z*s,cr=-x*s+z*c;if(Math.abs(cr)<1.25&&al>rp.r0*R&&al<rp.r1*R)return{rp,al,c,s}}return null},
+  lvY(x,z,y){let best=-1e9;if(this.onUpper(x,z)&&y>MEZ_H-.6)best=MEZ_H;const q=this.rampAt(x,z);
+    if(q){const t=clamp((q.al-q.rp.r0*R)/((q.rp.r1-q.rp.r0)*R),0,1),h=MEZ_H*(1-t);if(y>h-.7)best=Math.max(best,h)}return best},
+  fy(x,z,yy){let y=0;const f=this.sh.fy;if(f)y=f(Math.min(1,Math.hypot(x,z)/R));if(ev.floodT>0)for(const q of floodPads)if(Math.hypot(x-q.x,z-q.z)<q.r)y=Math.max(y,1.2);for(const q of isle)if(Math.hypot(x-q.x,z-q.z)<q.r)y=Math.max(y,q.h);if(yy!==undefined&&S.lv.mezzanine){const q=this.lvY(x,z,yy);if(q>y)y=q}return y},
   // direction toward the middle of the floor (up the signed-distance gradient)
   inward(x,z){const e=.25,gx=this.sd(x+e,z)-this.sd(x-e,z),gz=this.sd(x,z+e)-this.sd(x,z-e),l=Math.hypot(gx,gz);
     if(l<1e-6){const d=Math.hypot(x,z)||1;return[-x/d,-z/d]}return[gx/l,gz/l]},
@@ -928,6 +939,7 @@ function spawnStampede(){
 }
 
 function clearStatics(){
+  ramps.length=0;lvPads.length=0;while(mezG.children.length)mezG.remove(mezG.children[0]);
   [turrets,bumpers,wreck].forEach(clearList);
   while(laserPivot.children.length)laserPivot.remove(laserPivot.children[0]);
 }
@@ -936,6 +948,7 @@ function clearStatics(){
 function applyStatics(){
   clearStatics();if(!L('katamari'))kataReset();
   {const sc=S.picks.map(id=>byId[id]).find(c=>c.slot==='shape'),id=sc?sc.shape:'disc';if(S.t>0&&ARENA.id!==id&&!(ev.swapT>0))morphTo(id,0);else if(!ev.morph&&!(ev.swapT>0))ARENA.set(id)}
+  buildMezz();
   const nt=L('turrets')?Math.round(2*mv('turrets','count')):0, off=rand(0,6.28);
   for(let i=0;i<nt;i++){const g=new T.Group(),base=new T.Mesh(GEO.cyl,MAT.turret);base.scale.set(.5,1.6,.5);g.add(base);
     const head=new T.Mesh(GEO.cone,MAT.shot);head.position.y=1.1;g.add(head);world.add(shadowed(g));
@@ -1079,6 +1092,26 @@ function kataUpdate(){
     b.dead=true;world.remove(b.mesh);const m=b.mesh;kata.stuck.push(m);player.ball.add(m);
     tmp.set(rand(-1,1),rand(-1,1),rand(-1,1)).normalize();m.position.copy(tmp).multiplyScalar(1.05);m.scale.setScalar(.4);m.rotation.set(rand(0,6),rand(0,6),rand(0,6));
     kata.n++;add(PAY.katamari*sz,'katamari',player.p.clone());snd(520+Math.min(kata.n,20)*20,.06,'triangle',.05,200)}}
+// Mezzanine meshes live in mezG, built from fractions of the plate radius and scaled with the plate each frame.
+const mezG=new T.Group();world.add(mezG);
+function buildMezz(){
+  if(!L('mezzanine'))return;const urf=.42*(stacks('mezzanine','size')?1.35:1),a0=.6;
+  const top=new T.Mesh(GEO.cyl,new T.MeshLambertMaterial({color:0x8f7bff,transparent:true,opacity:.55,depthWrite:false}));top.scale.set(urf*R0,.5,urf*R0);top.position.y=MEZ_H-.25;mezG.add(top);
+  const rim=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color:0xffd23f,side:T.DoubleSide}));rim.scale.setScalar(urf*R0);rim.position.y=MEZ_H+.02;mezG.add(rim);
+  for(let i=0;i<2;i++){const a=a0+i*Math.PI,c=Math.cos(a),sn=Math.sin(a);let r1=.9;while(r1>.55&&!ARENA.on(c*r1*R0,sn*r1*R0,1.5))r1-=.1;
+    const r0=urf-.02;ramps.push({a,r0,r1});const len=(r1-r0)*R0,g=new T.Group(),m=new T.Mesh(GEO.box,new T.MeshLambertMaterial({color:0xffd23f}));
+    m.scale.set(Math.hypot(len,MEZ_H),.2,2.4);m.rotation.z=-Math.atan2(MEZ_H,len);m.position.y=MEZ_H/2;g.add(m);g.rotation.y=-a;g.position.set(c*(r0+r1)/2*R0,0,sn*(r0+r1)/2*R0);mezG.add(g)}
+  for(let i=0;i<2;i++){const a=a0+Math.PI/2+i*Math.PI,c=Math.cos(a),sn=Math.sin(a);let f=.72;while(f>.5&&!ARENA.on(c*f*R0,sn*f*R0,1.5))f-=.1;
+    const pd={fx:c*f,fz:sn*f,dx:c*.28,dz:sn*.28,cd:0};lvPads.push(pd);
+    const m=new T.Mesh(GEO.cyl,new T.MeshBasicMaterial({color:0x3df0c2}));m.scale.set(1.1,.1,1.1);m.position.set(pd.fx*R0,.06,pd.fz*R0);mezG.add(m);
+    const ar=new T.Mesh(GEO.cone,new T.MeshBasicMaterial({color:0xffffff}));ar.scale.set(.8,.9,.8);ar.position.set(pd.fx*R0,.6,pd.fz*R0);mezG.add(ar)}}
+function mezUpdate(dt,g){
+  const pr=1.1*R/R0;
+  for(const pd of lvPads){pd.cd-=dt;if(pd.cd>0)continue;const px=pd.fx*R,pz=pd.fz*R;
+    for(const b of bodies){if(b.dead||!b.g||b.p.y>2.2||b.kind==='boulder'||b.kind==='boss'||Math.hypot(b.p.x-px,b.p.z-pz)>pr)continue;
+      const T2=1.3;b.v.set((pd.dx*R-b.p.x)/T2,(MEZ_H+b.r-b.p.y+.5*g*(b.gs||1)*T2*T2)/T2,(pd.dz*R-b.p.z)/T2);b.g=false;pd.cd=1.2;
+      ringFx(px,pz,1.6,0x3df0c2);snd(500,.25,'sine',.07,700);if(b===player)add(15,'mezzanine',player.p.clone())}}
+  if(player.g&&player.p.y>MEZ_H-.3&&ARENA.onUpper(player.p.x,player.p.z)){timers.up=(timers.up||0)+dt;if(timers.up>=.5){timers.up=0;add(PAY.mezzanine,'mezzanine',null)}}}
 /* ---------- fx ---------- */
 let shake=0;
 function ringFx(x,z,rad,color=0xffffff){const m=new T.Mesh(GEO.ring,new T.MeshBasicMaterial({color,transparent:true,side:T.DoubleSide}));
@@ -1452,7 +1485,7 @@ function update(dt){
     b.cd-=dt; b.v.y-=g*(b.gs||1)*dt; b.v.x+=tx*dt; b.v.z+=tz*dt;
     b.p.x+=b.v.x*dt;b.p.y+=b.v.y*dt;b.p.z+=b.v.z*dt;
     edgeRule(b,dt);
-    const on=ARENA.on(b.p.x,b.p.z,-b.r*.35),fl=ARENA.fy(b.p.x,b.p.z);
+    const upOn=S.lv.mezzanine&&b.p.y>MEZ_H-.6&&ARENA.onUpper(b.p.x,b.p.z,-b.r*.35),on=upOn||ARENA.on(b.p.x,b.p.z,-b.r*.35),fl=ARENA.fy(b.p.x,b.p.z,b.p.y);
     if(on&&b.p.y<fl+b.r&&b.p.y>fl-.5&&b.v.y<=0){
       const impact=-b.v.y; b.p.y=fl+b.r;
       if(ARENA.sh.fy){const e=.3,sx=(ARENA.fy(b.p.x+e,b.p.z)-ARENA.fy(b.p.x-e,b.p.z))/(2*e),sz=(ARENA.fy(b.p.x,b.p.z+e)-ARENA.fy(b.p.x,b.p.z-e))/(2*e);b.v.x-=sx*g*.55*dt;b.v.z-=sz*g*.55*dt}
@@ -1460,12 +1493,13 @@ function update(dt){
         if(L('surfer')){const sr=5*mv('slam','size');for(const o of bodies)if(o.kind==='boulder'&&!o.dead&&Math.hypot(o.p.x-b.p.x,o.p.z-b.p.z)<sr){o.dead=true;world.remove(o.mesh);burst(o.p,0x8a7a6a,10);add(PAY.stampede*.5,'stampede',o.p.clone())}}}
       else if(bouncy&&impact>3){b.v.y=impact*.72}else b.v.y=0;
       b.g=true;
+      {const rm=ARENA.rampAt(b.p.x,b.p.z);b.slide=!!rm&&fl>.3;if(b.slide){b.v.x+=rm.c*16*dt;b.v.z+=rm.s*16*dt}} // slides carry you down
       if(impact>6){if(b===player){player.q=Math.max(player.q,Math.min(.45,impact*.03));burst(b.p,0xf3ecdc,4)}
         else if(b.r>.8){shake=Math.max(shake,.3);snd(55,.16,'sine',.1,-15);burst(b.p,0xf3ecdc,5)}}
       if(b===player){if(ev.flipPending&&S.t-ev.flipT>.4){ev.flipPending=false;add(PAY.flip,'flip',b.p.clone(),L('spincycle')&&L('turntable')?3:1)}
         if(L('pogo')&&b.v.y<7){b.v.y=8.5*mv('pogo','force');if(L('quakerider')&&ev.quakeT>0)add(PAY.quakerider,'quakerider',b.p.clone())}}
-    }else b.g=false;
-    if(b.g&&b.kind!=='boulder'){const k=Math.exp(-fr*dt);b.v.x*=k;b.v.z*=k}
+    }else{b.g=false;b.slide=false}
+    if(b.g&&!b.slide&&b.kind!=='boulder'){const k=Math.exp(-fr*dt);b.v.x*=k;b.v.z*=k}
     if(b===player){if(!ARENA.on(b.p.x,b.p.z,-.4)&&b.p.y<b.r-.4&&!player.hooked)ev.offT=(ev.offT||0)+dt;else ev.offT=0;
       if(ev.offT>1.6){ev.offT=0;fell(b);continue}} // off the plate this long counts as fallen, however slowly you drift down
     if(b.p.y<-16)fell(b);
@@ -1618,6 +1652,7 @@ function update(dt){
   if(L('bonusdisk')){if(!zone.on||!ARENA.on(zone.p.x,zone.p.z,1)){const[x,z]=spot(.7,0);zone.p.set(x,0,z);zone.on=true}
     zoneMk.visible=true;zoneMk.position.set(zone.p.x,.035+ARENA.fy(zone.p.x,zone.p.z),zone.p.z)}else{zoneMk.visible=false;zone.on=false}
   if(L('katamari'))kataUpdate();
+  mezG.visible=!!L('mezzanine');if(mezG.visible){mezG.scale.set(R/R0,1,R/R0);mezUpdate(dt,g)}
   if(L('slipstream')&&player.dashT>0){timers.slip=(timers.slip||0)+dt;if(timers.slip>=.1){timers.slip=0;add(PAY.slipstream,'slipstream',null)}}
   if(L('countdown')){if(!(L('overclock')&&S.streak>0&&S.t-S.lastScore<2))S.clock-=dt;if(S.clock<=0){gameOver();return}}
   if(L('decay')){S.score=Math.max(0,S.score-S.score*.012*dt);S.peak=Math.max(S.peak,S.score)}

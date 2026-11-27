@@ -11,6 +11,7 @@ One continuous run. Every 20 s a card appears on the plate; roll into it to paus
 - **Prompts** are events that pay a bounty when you come through them.
 - **Modifiers** multiply a card you own, or rewire when a prompt fires.
 - **Structural cards** change how cards arrive (Draft Rules), how you choose (Draft Styles) and how you score (Economies).
+- **Stage cards** like Mezzanine add a second plate, launch pads and slides.
 - **Synergies** are rare cards offered once you own both of their parents.
 - **Enhanced** cards pay a little more; **Overloaded** cards come with a free modifier. Both are likelier with a draft rule that has no timer (Quota, Sprint Goal, Scars, Chain Gang…).
 
